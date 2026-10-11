@@ -1,5 +1,1060 @@
 ---
-// Placeholder: replaced by the real interactive demo.
+// "Run the suite": a tiny IDE + Cucumber runner for an illustrative instant-payment scenario.
+// Everything here is generic: public ISO 20022 message types, example IBANs, fictional BICs.
+
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function tokenize(line: string, re: RegExp, cls: (m: RegExpExecArray) => string | null): string {
+  let out = "";
+  let last = 0;
+  re.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(line))) {
+    if (m[0] === "") { re.lastIndex++; continue; }
+    out += esc(line.slice(last, m.index));
+    const c = cls(m);
+    out += c ? `<span class="${c}">${esc(m[0])}</span>` : esc(m[0]);
+    last = m.index + m[0].length;
+  }
+  return out + esc(line.slice(last));
+}
+
+// ---------- Gherkin ----------
+interface FeatureLine { indent: number; html: string; step?: number; scenario?: boolean }
+const featureSrc = [
+  "@instant @pacs008",
+  "Feature: Instant credit transfer",
+  "",
+  "  Scenario: Customer sends an instant payment",
+  '    Given the debtor account "DE89 3704 0044 0532 0130 00" has 500.00 EUR',
+  '    When the bank sends a pacs.008 credit transfer of 120.00 EUR to "FR14 2004 1010 0505 0001 3M02 606"',
+  "    Then the message is valid against the pacs.008 schema",
+  '    And the clearing system replies with pacs.002 status "ACCP"',
+  "    And the debtor account has 380.00 EUR",
+];
+let stepNo = 0;
+const featureLines: FeatureLine[] = featureSrc.map((raw) => {
+  const indent = raw.length - raw.trimStart().length;
+  const text = raw.trim();
+  const html = tokenize(
+    text,
+    /^(Feature:|Scenario:|Given|When|Then|And)|("[^"]*")|(@\w+)|\b(\d+\.\d{2})\b/g,
+    (m) => (m[1] ? "g-kw" : m[2] ? "g-str" : m[3] ? "g-tag" : m[4] ? "g-num" : null),
+  );
+  const isStep = /^(Given|When|Then|And)\b/.test(text);
+  return { indent, html, step: isStep ? stepNo++ : undefined, scenario: text.startsWith("Scenario:") };
+});
+
+// ---------- Kotlin ----------
+const ktSrc = `package bank.tests.steps
+
+import io.cucumber.java.en.Given
+import io.cucumber.java.en.Then
+import io.cucumber.java.en.When
+import org.assertj.core.api.Assertions.assertThat
+import java.math.BigDecimal
+
+class PaymentSteps(
+    private val accounts: TestAccounts,   // test-data API
+    private val gateway: PaymentGateway,  // ISO 20022 endpoint
+    private val clearing: ClearingSim,    // clearing system simulator
+) {
+    private lateinit var debtor: String
+    private lateinit var pacs008: Pacs008
+
+    @Given("the debtor account {string} has {bigdecimal} EUR")
+    fun debtorHas(iban: String, balance: BigDecimal) {
+        debtor = iban.replace(" ", "")
+        accounts.ensureBalance(debtor, balance, "EUR")
+    }
+
+    @When("the bank sends a pacs.008 credit transfer of {bigdecimal} EUR to {string}")
+    fun sendCreditTransfer(amount: BigDecimal, creditor: String) {
+        val mt103 = Mt103.creditTransfer(debtor, creditor.replace(" ", ""), amount)
+        pacs008 = MtToMx.convert(mt103)   // MT103 -> pacs.008.001.08
+        assertThat(pacs008.settlementAmount).isEqualByComparingTo(amount)
+        gateway.send(pacs008)
+    }
+
+    @Then("the message is valid against the pacs.008 schema")
+    fun messageIsValid() {
+        assertThat(Xsd.PACS_008.validate(pacs008.xml)).isEmpty()
+    }
+
+    @Then("the clearing system replies with pacs.002 status {string}")
+    fun clearingReplies(status: String) {
+        val pacs002 = clearing.awaitStatusReport(pacs008.endToEndId)
+        assertThat(pacs002.txStatus).isEqualTo(status)
+    }
+
+    @Then("the debtor account has {bigdecimal} EUR")
+    fun debtorBalance(expected: BigDecimal) {
+        assertThat(accounts.balance(debtor)).isEqualByComparingTo(expected)
+    }
+}`;
+let kStep = -1;
+let inFn = false;
+const ktLines = ktSrc.split("\n").map((raw) => {
+  if (/^\s+@(Given|When|Then)\(/.test(raw)) { kStep++; inFn = true; }
+  const step = inFn ? kStep : undefined;
+  if (inFn && /^ {4}\}$/.test(raw)) inFn = false;
+  const html = tokenize(
+    raw,
+    /(\/\/.*$)|("(?:[^"\\]|\\.)*")|(@\w+)|\b(package|import|class|private|val|var|fun|lateinit)\b|\b([A-Z]\w*)\b/g,
+    (m) => (m[1] ? "k-com" : m[2] ? "k-str" : m[3] ? "k-ann" : m[4] ? "k-kw" : m[5] ? "k-type" : null),
+  );
+  return { html: html || " ", step };
+});
+
+const bugs = [
+  { v: "none", label: "None (happy path)" },
+  { v: "decimal", label: "MT→MX conversion drops the decimal point" },
+  { v: "funds", label: "Debtor has insufficient funds" },
+  { v: "bic", label: "Creditor agent BIC missing" },
+];
 ---
-<div class="ph">PaymentsDemo</div>
-<style>.ph{aspect-ratio:4/3;border:2px dashed var(--line);border-radius:var(--radius);display:grid;place-items:center;font-family:var(--font-mono);color:var(--muted)}</style>
+<div class="pd" data-pd>
+  <div class="pd-toolbar">
+    <button type="button" class="pd-run" data-run>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor" /></svg>
+      <span data-run-label>Run scenario</span>
+    </button>
+    <label class="pd-bug">
+      <span class="pd-bug-label">Inject a bug</span>
+      <span class="pd-select">
+        <select data-bug>
+          {bugs.map((b) => <option value={b.v}>{b.label}</option>)}
+        </select>
+        <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </span>
+    </label>
+  </div>
+
+  <div class="pd-ide" data-ide>
+    <div class="pd-tabs" role="tablist" aria-label="Source files">
+      <span class="pd-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <button type="button" role="tab" class="pd-tab" aria-selected="true" data-tab="feature" id="pd-tab-feature" aria-controls="pd-panel-feature">
+        <span class="pd-fi pd-fi-g" aria-hidden="true">G</span>instant_payment.feature
+      </button>
+      <button type="button" role="tab" class="pd-tab" aria-selected="false" tabindex="-1" data-tab="kt" id="pd-tab-kt" aria-controls="pd-panel-kt">
+        <span class="pd-fi pd-fi-k" aria-hidden="true">K</span>PaymentSteps.kt
+      </button>
+    </div>
+
+    <div class="pd-editor" data-editor>
+      <div class="pd-panel pd-feature" role="tabpanel" id="pd-panel-feature" aria-labelledby="pd-tab-feature" data-panel="feature" tabindex="0">
+        {featureLines.map((l, i) => (
+          <div
+            class:list={["pd-row", { "pd-steprow": l.step !== undefined, "pd-scen": l.scenario }]}
+            data-step={l.step}
+            data-scen={l.scenario ? "" : undefined}
+            data-state={l.step !== undefined || l.scenario ? "idle" : undefined}
+          >
+            <span class="pd-ln" aria-hidden="true">{i + 1}</span>
+            <span class="pd-st" aria-hidden="true"></span>
+            <span class="pd-code" style={`--ind:${l.indent}`} set:html={l.html || " "} />
+            <span class="pd-dur"></span>
+          </div>
+        ))}
+      </div>
+      <div class="pd-panel pd-kt" role="tabpanel" id="pd-panel-kt" aria-labelledby="pd-tab-kt" data-panel="kt" tabindex="0" hidden>
+        <pre><code>{ktLines.map((l, i) => (
+          <span class="pd-kl" data-k={l.step}><span class="pd-ln" aria-hidden="true">{i + 1}</span><span set:html={l.html} /></span>
+        ))}</code></pre>
+      </div>
+    </div>
+
+    <div class="pd-subhead">
+      <span class="pd-subtitle">Message</span>
+      <div class="pd-mtabs" role="tablist" aria-label="ISO 20022 messages">
+        <button type="button" role="tab" class="pd-mtab" aria-selected="true" data-mtab="p8">pacs.008 <span class="pd-mdir">out</span></button>
+        <button type="button" role="tab" class="pd-mtab" aria-selected="false" tabindex="-1" data-mtab="p2">pacs.002 <span class="pd-mdir">in</span></button>
+      </div>
+    </div>
+    <div class="pd-xml" data-xml tabindex="0" aria-label="ISO 20022 message XML"></div>
+
+    <div class="pd-subhead">
+      <span class="pd-subtitle">Run</span>
+      <span class="pd-runstate" data-runstate>idle</span>
+    </div>
+    <div class="pd-console" data-console role="log" aria-label="Test runner output" tabindex="0">
+      <div class="pd-cl pd-c-dim">$ ./gradlew cucumber -Dtags=@instant</div>
+      <div class="pd-cl pd-c-dim">Ready. Press <b>Run scenario</b>.</div>
+    </div>
+  </div>
+
+  <section class="pd-report" data-report hidden aria-label="Test report">
+    <header class="pd-rhead">
+      <div>
+        <p class="pd-rkick">Allure-style report · <span data-runno>run #1</span></p>
+        <h3 class="pd-rtitle">Instant credit transfer</h3>
+      </div>
+      <span class="pd-badge" data-badge>passed</span>
+    </header>
+    <div class="pd-rbody">
+      <div class="pd-donut">
+        <svg viewBox="0 0 100 100" role="img" data-donut aria-label="">
+          <circle cx="50" cy="50" r="38" class="pd-d-track" />
+          <circle cx="50" cy="50" r="38" class="pd-d-seg pd-d-pass" pathLength="100" data-seg="pass" />
+          <circle cx="50" cy="50" r="38" class="pd-d-seg pd-d-fail" pathLength="100" data-seg="fail" />
+          <circle cx="50" cy="50" r="38" class="pd-d-seg pd-d-skip" pathLength="100" data-seg="skip" />
+        </svg>
+        <div class="pd-dlabel"><b data-pct>100%</b><span>passed</span></div>
+      </div>
+      <dl class="pd-counts">
+        <div><dt><i class="pd-sw pd-sw-pass"></i>Passed</dt><dd data-n="pass">0</dd></div>
+        <div><dt><i class="pd-sw pd-sw-fail"></i>Failed</dt><dd data-n="fail">0</dd></div>
+        <div><dt><i class="pd-sw pd-sw-skip"></i>Skipped</dt><dd data-n="skip">0</dd></div>
+        <div><dt>Duration</dt><dd data-n="dur">0 ms</dd></div>
+      </dl>
+    </div>
+    <div class="pd-timeline" data-timeline aria-label="Step timeline"></div>
+    <div class="pd-failbox" data-failbox hidden></div>
+    <footer class="pd-rfoot">
+      <div class="pd-history" aria-label="Run history"><span>History</span><span class="pd-hdots" data-history></span></div>
+      <button type="button" class="pd-rerun" data-rerun>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.6-3.7M13 2.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        Re-run
+      </button>
+    </footer>
+    <p class="pd-sim">Simulated run with illustrative timings.</p>
+  </section>
+
+  <p class="sr-only" aria-live="polite" data-live></p>
+</div>
+
+<style is:global>
+  .pd [hidden] { display: none !important; }
+  .pd {
+    --ide-bg: #15171c;
+    --ide-bg-2: #1b1e25;
+    --ide-line: #2a2e38;
+    --ide-text: #d9dce3;
+    --ide-dim: #6c7384;
+    --ide-pass: #3ccf7f;
+    --ide-fail: #ff6b6b;
+    --ide-hl: rgba(255, 210, 110, 0.13);
+    --ide-hl-edge: #f2c35b;
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+    font-family: var(--font-body);
+  }
+
+  /* ---------- toolbar ---------- */
+  .pd .pd-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 16px; }
+  .pd .pd-run {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 12px 20px 12px 16px; border-radius: 999px; border: 0;
+    background: var(--accent); color: #fff;
+    font: 650 15px/1 var(--font-body); cursor: pointer;
+    box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--accent) 80%, transparent), inset 0 -2px 0 rgba(0,0,0,.12);
+    transition: transform .15s, filter .15s, background .2s;
+  }
+  .pd .pd-run svg { width: 14px; height: 14px; }
+  .pd .pd-run:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.05); }
+  .pd .pd-run:active:not(:disabled) { transform: translateY(0); }
+  .pd .pd-run:disabled { cursor: progress; background: color-mix(in srgb, var(--accent) 55%, #8a8a8a); }
+  .pd .pd-run.is-armed { background: var(--fail); box-shadow: 0 6px 18px -8px rgba(214, 69, 69, .8), inset 0 -2px 0 rgba(0,0,0,.12); }
+  .pd .pd-bug { display: grid; gap: 5px; flex: 1 1 220px; min-width: 0; }
+  .pd .pd-bug-label { font: 600 11.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .pd .pd-select { position: relative; display: block; }
+  .pd .pd-select select {
+    appearance: none; -webkit-appearance: none; width: 100%;
+    padding: 10px 34px 10px 12px; border-radius: 12px;
+    border: 1.5px solid var(--line); background: var(--card); color: var(--ink);
+    font: 500 14px/1.2 var(--font-body); cursor: pointer;
+    text-overflow: ellipsis;
+  }
+  .pd .pd-select select:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 2px; }
+  .pd .pd-select select.is-armed { border-color: var(--fail); background: #fff6f5; color: #9b2424; }
+  .pd .pd-select svg { position: absolute; right: 12px; top: 50%; width: 12px; height: 12px; transform: translateY(-50%); pointer-events: none; color: var(--muted); }
+
+  /* ---------- IDE frame ---------- */
+  .pd .pd-ide {
+    background: var(--ide-bg); color: var(--ide-text);
+    border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow), 0 0 0 1px rgba(0,0,0,.25);
+    font-family: var(--font-mono);
+    transition: box-shadow .3s;
+    font-variant-ligatures: none;
+  }
+  .pd .pd-ide.is-failflash { animation: pd-flash 0.9s ease-out 1; }
+  @keyframes pd-flash {
+    0% { box-shadow: var(--shadow), 0 0 0 2px var(--ide-fail), 0 0 40px -6px rgba(255,107,107,.7); }
+    100% { box-shadow: var(--shadow), 0 0 0 1px rgba(0,0,0,.25); }
+  }
+  .pd .pd-tabs {
+    display: flex; align-items: stretch; gap: 2px; padding: 0 10px 0 0;
+    background: #101216; border-bottom: 1px solid var(--ide-line);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .pd .pd-tabs::-webkit-scrollbar { display: none; }
+  .pd .pd-dots { display: flex; gap: 6px; align-items: center; padding: 0 14px; flex: none; }
+  .pd .pd-dots i { width: 10px; height: 10px; border-radius: 50%; background: #2c3039; }
+  .pd .pd-dots i:first-child { background: #ff5f57; opacity: .8; }
+  .pd .pd-dots i:nth-child(2) { background: #febc2e; opacity: .8; }
+  .pd .pd-dots i:nth-child(3) { background: #28c840; opacity: .8; }
+  .pd .pd-tab {
+    flex: none; display: inline-flex; align-items: center; gap: 7px;
+    padding: 11px 14px 10px; border: 0; background: transparent; color: var(--ide-dim);
+    font: 500 12.5px/1 var(--font-mono); cursor: pointer; white-space: nowrap;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .pd .pd-tab:hover { color: var(--ide-text); }
+  .pd .pd-tab[aria-selected="true"] { color: var(--ide-text); background: var(--ide-bg); border-bottom-color: var(--accent); }
+  .pd .pd-tab:focus-visible, .pd .pd-mtab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .pd .pd-fi { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; font: 700 10px/1 var(--font-mono); color: #15171c; }
+  .pd .pd-fi-g { background: #3ccf7f; }
+  .pd .pd-fi-k { background: linear-gradient(135deg, #7f52ff, #e44857); color: #fff; }
+
+  .pd .pd-editor { height: 318px; position: relative; }
+  .pd .pd-panel { height: 100%; overflow: auto; padding: 12px 0 14px; font-size: 13px; line-height: 1.62; scrollbar-color: #343946 transparent; }
+  .pd .pd-panel:focus-visible, .pd .pd-xml:focus-visible, .pd .pd-console:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .pd .pd-row {
+    display: grid; grid-template-columns: 34px 20px minmax(0, 1fr) auto;
+    align-items: start; padding-right: 12px; position: relative;
+  }
+  .pd .pd-ln { color: #4a505e; text-align: right; padding-right: 8px; user-select: none; font-size: 12px; }
+  .pd .pd-st { display: grid; place-items: center; height: 1.62em; }
+  .pd .pd-code {
+    white-space: pre-wrap; overflow-wrap: anywhere;
+    padding-left: calc(var(--ind, 0) * 1ch + 2ch); text-indent: -2ch;
+  }
+  .pd .pd-dur { font-size: 11.5px; color: var(--ide-dim); padding-left: 10px; white-space: nowrap; line-height: 1.9; }
+  .pd .pd-steprow, .pd .pd-scen { transition: background .25s; }
+  .pd .pd-row[data-state="running"] { background: var(--ide-hl); box-shadow: inset 2px 0 0 var(--ide-hl-edge); }
+  .pd .pd-row[data-state="passed"] .pd-dur { color: var(--ide-pass); }
+  .pd .pd-row[data-state="failed"] { background: rgba(255, 107, 107, .12); box-shadow: inset 2px 0 0 var(--ide-fail); }
+  .pd .pd-row[data-state="failed"] .pd-dur { color: var(--ide-fail); }
+  .pd .pd-row[data-state="skipped"] .pd-code { opacity: .42; }
+  .pd .pd-row[data-state="skipped"] .pd-dur { color: var(--ide-dim); font-style: italic; }
+  .pd .pd-row.is-shake { animation: pd-shake .42s cubic-bezier(.36,.07,.19,.97) 1; }
+  @keyframes pd-shake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(3px); }
+    30%, 50%, 70% { transform: translateX(-5px); }
+    40%, 60% { transform: translateX(5px); }
+  }
+  .pd .pd-row.is-passflash { animation: pd-pass .7s ease-out 1; }
+  @keyframes pd-pass { from { background: rgba(60, 207, 127, .16); } to { background: transparent; } }
+
+  .pd .pd-ico { width: 13px; height: 13px; display: block; }
+  .pd .pd-ico-idle { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #4a505e; }
+  .pd .pd-spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(242,195,91,.25); border-top-color: var(--ide-hl-edge); animation: pd-rot .7s linear infinite; }
+  @keyframes pd-rot { to { transform: rotate(360deg); } }
+  .pd .pd-ico-pass { color: var(--ide-pass); }
+  .pd .pd-ico-fail { color: var(--ide-fail); }
+  .pd .pd-ico-skip { color: var(--ide-dim); }
+
+  .pd .g-kw { color: #c3a6ff; font-weight: 600; }
+  .pd .g-str { color: #e6c07b; }
+  .pd .g-num { color: #7fd1c7; }
+  .pd .g-tag { color: #f78c6c; }
+
+  /* inline failure block */
+  .pd .pd-err {
+    margin: 6px 12px 8px 54px; padding: 10px 12px 11px;
+    border-radius: 10px; background: #2a1719; border: 1px solid rgba(255, 107, 107, .35);
+    font-size: 12.2px; line-height: 1.55; color: #f3d6d6;
+    animation: pd-in .35s ease-out both;
+  }
+  @keyframes pd-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .pd .pd-err-h { color: var(--ide-fail); font-weight: 700; margin-bottom: 6px; overflow-wrap: anywhere; }
+  .pd .pd-err-h span { color: #b99; font-weight: 500; }
+  .pd .pd-diff { display: grid; gap: 1px; margin: 4px 0 7px; border-radius: 6px; overflow: hidden; }
+  .pd .pd-diff div { padding: 2px 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .pd .pd-diff .m { background: rgba(60, 207, 127, .11); color: #b8f0cf; }
+  .pd .pd-diff .p { background: rgba(255, 107, 107, .16); color: #ffd0d0; }
+  .pd .pd-diff b { font-weight: 700; }
+  .pd .pd-err-note { color: #c9a9a9; overflow-wrap: anywhere; }
+
+  /* kotlin */
+  .pd .pd-kt pre { margin: 0; font: inherit; }
+  .pd .pd-kt code { display: block; min-width: max-content; font: inherit; }
+  .pd .pd-kl { display: block; padding-right: 16px; white-space: pre; transition: background .25s; }
+  .pd .pd-kl .pd-ln { display: inline-block; width: 34px; padding-right: 14px; }
+  .pd .pd-kl.is-running { background: var(--ide-hl); box-shadow: inset 2px 0 0 var(--ide-hl-edge); }
+  .pd .pd-kl.is-failed { background: rgba(255, 107, 107, .12); box-shadow: inset 2px 0 0 var(--ide-fail); }
+  .pd .pd-kl.is-passed { box-shadow: inset 2px 0 0 rgba(60, 207, 127, .7); }
+  .pd .k-com { color: #6b7385; font-style: italic; }
+  .pd .k-str { color: #e6c07b; }
+  .pd .k-ann { color: #f78c6c; }
+  .pd .k-kw { color: #c3a6ff; }
+  .pd .k-type { color: #82aaff; }
+
+  /* message + console */
+  .pd .pd-subhead {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 0 10px 0 14px; min-height: 38px;
+    background: #101216; border-top: 1px solid var(--ide-line); border-bottom: 1px solid var(--ide-line);
+  }
+  .pd .pd-subtitle { font: 600 11px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ide-dim); }
+  .pd .pd-mtabs { display: flex; gap: 4px; }
+  .pd .pd-mtab {
+    border: 1px solid transparent; background: transparent; color: var(--ide-dim);
+    font: 500 12px/1 var(--font-mono); padding: 6px 9px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+  }
+  .pd .pd-mtab:hover { color: var(--ide-text); }
+  .pd .pd-mtab[aria-selected="true"] { color: var(--ide-text); background: var(--ide-bg-2); border-color: var(--ide-line); }
+  .pd .pd-mtab.is-new::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ide-hl-edge); margin-left: 6px; vertical-align: 1px; }
+  .pd .pd-mdir { color: #4f5666; font-size: 10.5px; margin-left: 2px; }
+
+  .pd .pd-xml {
+    height: 214px; overflow: auto; padding: 10px 0 12px; font-size: 12.5px; line-height: 1.6;
+    background: var(--ide-bg-2); scrollbar-color: #343946 transparent;
+  }
+  .pd .pd-xl { display: block; white-space: pre; padding: 0 16px 0 0; min-width: max-content; transition: background .3s, box-shadow .3s; }
+  .pd .pd-xl .pd-ln { display: inline-block; width: 34px; padding-right: 12px; }
+  .pd .pd-xl.hl { background: var(--ide-hl); box-shadow: inset 2px 0 0 var(--ide-hl-edge); }
+  .pd .pd-xl.ok { background: rgba(60, 207, 127, .1); box-shadow: inset 2px 0 0 var(--ide-pass); }
+  .pd .pd-xl.bad { background: rgba(255, 107, 107, .15); box-shadow: inset 2px 0 0 var(--ide-fail); }
+  .pd .pd-xl.gap { color: var(--ide-fail); font-style: italic; }
+  .pd .pd-xl.changed .x-txt { text-decoration: underline wavy var(--ide-fail); text-underline-offset: 3px; }
+  .pd .x-tag { color: #82aaff; }
+  .pd .x-attr { color: #c3a6ff; }
+  .pd .x-val { color: #e6c07b; }
+  .pd .x-txt { color: #eef0f4; }
+  .pd .pd-wait { padding: 26px 18px; color: var(--ide-dim); font-size: 12.5px; line-height: 1.6; display: flex; gap: 10px; align-items: center; }
+  .pd .pd-wait .pd-spin { flex: none; }
+
+  .pd .pd-runstate { font-size: 11.5px; color: var(--ide-dim); }
+  .pd .pd-runstate.is-pass { color: var(--ide-pass); }
+  .pd .pd-runstate.is-fail { color: var(--ide-fail); }
+  .pd .pd-runstate.is-run { color: var(--ide-hl-edge); }
+  .pd .pd-console {
+    height: 148px; overflow: auto; padding: 10px 14px 12px; font-size: 12px; line-height: 1.6;
+    scrollbar-color: #343946 transparent;
+  }
+  .pd .pd-cl { white-space: pre-wrap; overflow-wrap: anywhere; padding-left: 7ch; text-indent: -7ch; animation: pd-in .25s ease-out both; }
+  .pd .pd-cl b { color: var(--ide-text); font-weight: 600; }
+  .pd .pd-c-t { color: #4f5666; }
+  .pd .pd-c-dim { color: var(--ide-dim); }
+  .pd .pd-c-out { color: #82aaff; }
+  .pd .pd-c-in { color: #7fd1c7; }
+  .pd .pd-c-ok { color: var(--ide-pass); }
+  .pd .pd-c-bad { color: var(--ide-fail); }
+  .pd .pd-c-warn { color: #f2c35b; }
+
+  /* ---------- report ---------- */
+  .pd .pd-report {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 20px 20px 16px; display: grid; gap: 18px;
+    animation: pd-in .45s ease-out both;
+    border-top: 4px solid var(--pass);
+  }
+  .pd .pd-report.is-failed { border-top-color: var(--fail); }
+  .pd .pd-rhead { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+  .pd .pd-rkick { font: 600 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .pd .pd-rtitle { font-size: 20px; margin-top: 8px; font-weight: 650; }
+  .pd .pd-badge {
+    flex: none; font: 700 11.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase;
+    padding: 7px 10px; border-radius: 999px; background: var(--pass-soft); color: #13703b;
+  }
+  .pd .pd-badge.is-failed { background: #fbe3e1; color: #a72f2f; }
+  .pd .pd-rbody { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .pd .pd-donut { position: relative; width: 116px; height: 116px; flex: none; }
+  .pd .pd-donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .pd .pd-donut circle { fill: none; stroke-width: 13; }
+  .pd .pd-d-track { stroke: var(--paper-2); }
+  .pd .pd-d-seg { stroke-dasharray: 0 100; transition: stroke-dasharray .9s cubic-bezier(.2,.8,.2,1), stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1); }
+  .pd .pd-d-pass { stroke: var(--pass); }
+  .pd .pd-d-fail { stroke: var(--fail); }
+  .pd .pd-d-skip { stroke: #c9bfae; }
+  .pd .pd-dlabel { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .pd .pd-dlabel b { font: 650 24px/1 var(--font-display); }
+  .pd .pd-dlabel span { font-size: 10.5px; color: var(--muted); margin-top: 3px; }
+  .pd .pd-counts { flex: 1 1 180px; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; }
+  .pd .pd-counts div { border-bottom: 1px dashed var(--line); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .pd .pd-counts dt { font-size: 13.5px; color: var(--ink-2); display: flex; align-items: center; gap: 7px; }
+  .pd .pd-counts dd { margin: 0; font: 650 19px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+  .pd .pd-sw { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+  .pd .pd-sw-pass { background: var(--pass); }
+  .pd .pd-sw-fail { background: var(--fail); }
+  .pd .pd-sw-skip { background: #c9bfae; }
+
+  .pd .pd-timeline { display: grid; gap: 7px; }
+  .pd .pd-tl-h { display: flex; justify-content: space-between; font: 600 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .pd .pd-tl-row { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 52px; gap: 10px; align-items: center; font-size: 12.5px; }
+  .pd .pd-tl-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); }
+  .pd .pd-tl-name b { font-weight: 650; color: var(--ink); }
+  .pd .pd-tl-track { position: relative; height: 10px; background: var(--paper-2); border-radius: 5px; overflow: hidden; }
+  .pd .pd-tl-bar { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: var(--pass); transform-origin: left; animation: pd-grow .6s cubic-bezier(.2,.8,.2,1) both; }
+  .pd .pd-tl-bar.failed { background: var(--fail); }
+  .pd .pd-tl-bar.skipped { background: repeating-linear-gradient(135deg, #d8cfc0 0 4px, transparent 4px 7px); border: 1px solid #d8cfc0; }
+  @keyframes pd-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  .pd .pd-tl-ms { text-align: right; font: 500 12px/1 var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .pd .pd-failbox {
+    border-radius: 12px; background: #fdf0ee; border: 1px solid #f2c9c4; padding: 12px 14px;
+    font-size: 13.5px; color: #6e2121; display: grid; gap: 6px;
+  }
+  .pd .pd-failbox h4 { margin: 0; font: 650 14px/1.3 var(--font-display); color: #a72f2f; }
+  .pd .pd-failbox code { font: 500 12px/1.5 var(--font-mono); background: #fff; border: 1px solid #f2d6d2; border-radius: 8px; padding: 7px 9px; display: block; white-space: pre-wrap; overflow-wrap: anywhere; color: #7b2222; }
+  .pd .pd-failbox p { line-height: 1.5; }
+
+  .pd .pd-rfoot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 14px; }
+  .pd .pd-history { display: flex; align-items: center; gap: 10px; font: 600 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .pd .pd-hdots { display: flex; gap: 4px; }
+  .pd .pd-hdots i { width: 10px; height: 18px; border-radius: 3px; background: var(--pass); display: block; }
+  .pd .pd-hdots i.f { background: var(--fail); }
+  .pd .pd-rerun {
+    display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 999px;
+    border: 1.5px solid var(--ink); background: transparent; color: var(--ink);
+    font: 600 14px/1 var(--font-body); cursor: pointer; transition: background .15s, color .15s;
+  }
+  .pd .pd-rerun svg { width: 14px; height: 14px; }
+  .pd .pd-rerun:hover:not(:disabled) { background: var(--ink); color: var(--paper); }
+  .pd .pd-rerun:disabled { opacity: .45; cursor: progress; }
+  .pd .pd-sim { font-size: 12px; color: var(--muted); margin-top: -8px; }
+
+  @media (max-width: 480px) {
+    .pd .pd-editor { height: 340px; }
+    .pd .pd-panel { font-size: 12.5px; }
+    .pd .pd-row { grid-template-columns: 26px 18px minmax(0, 1fr) auto; padding-right: 8px; }
+    .pd .pd-ln { padding-right: 6px; }
+    .pd .pd-kl .pd-ln, .pd .pd-xl .pd-ln { width: 28px; padding-right: 10px; }
+    .pd .pd-err { margin-left: 12px; }
+    .pd .pd-dur { padding-left: 6px; }
+    .pd .pd-report { padding: 16px 14px 14px; }
+    .pd .pd-tl-row { grid-template-columns: minmax(0, 1fr) 46px; gap: 3px 8px; }
+    .pd .pd-tl-name { grid-column: 1 / -1; }
+    .pd .pd-donut { width: 100px; height: 100px; }
+    .pd .pd-counts { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pd *, .pd *::before, .pd *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+    .pd .pd-spin { animation: none !important; border-color: var(--ide-hl-edge); }
+  }
+</style>
+
+<script>
+  type Bug = "none" | "decimal" | "funds" | "bic";
+  type State = "idle" | "running" | "passed" | "failed" | "skipped";
+  type Field = "msgId" | "e2e" | "amt" | "dbtrAcct" | "dbtrAgt" | "cdtrAgt" | "cdtrAcct" | "orgMsg" | "txSts" | "rsn";
+  interface XLine { t: string; f?: Field; gap?: boolean; changed?: boolean }
+  interface Failure { title: string; where: string; minus: string; plus: string; note: string; raw: string; short: string }
+
+  const STEP_NAMES = [
+    ["Given", "debtor has 500.00 EUR"],
+    ["When", "send pacs.008"],
+    ["Then", "pacs.008 schema valid"],
+    ["And", "pacs.002 status ACCP"],
+    ["And", "debtor has 380.00 EUR"],
+  ];
+  const BASE_MS = [42, 318, 27, 486, 61];
+
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const ICONS: Record<State, string> = {
+    idle: '<span class="pd-ico-idle"></span>',
+    running: '<span class="pd-spin"></span>',
+    passed: '<svg class="pd-ico pd-ico-pass" viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    failed: '<svg class="pd-ico pd-ico-fail" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+    skipped: '<svg class="pd-ico pd-ico-skip" viewBox="0 0 16 16"><path d="M4 8h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  };
+
+  function hlXml(line: string): string {
+    if (/^\s*<!--/.test(line)) return `<span class="k-com">${esc(line)}</span>`;
+    const re = /(<\/?[\w.:]+)|(\s[\w:]+=)("[^"]*")|(\/?>)/g;
+    let out = "";
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(line))) {
+      const between = line.slice(last, m.index);
+      if (between) out += /\S/.test(between) ? `<span class="x-txt">${esc(between)}</span>` : between;
+      if (m[1]) out += `<span class="x-tag">${esc(m[1])}</span>`;
+      else if (m[2]) out += `<span class="x-attr">${esc(m[2])}</span><span class="x-val">${esc(m[3])}</span>`;
+      else out += `<span class="x-tag">${esc(m[4])}</span>`;
+      last = m.index + m[0].length;
+    }
+    return out + esc(line.slice(last));
+  }
+
+  function init(root: HTMLElement) {
+    const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector(s) as T;
+    const $$ = <T extends Element = HTMLElement>(s: string) => Array.from(root.querySelectorAll(s)) as T[];
+
+    const runBtn = $<HTMLButtonElement>("[data-run]");
+    const runLabel = $("[data-run-label]");
+    const bugSel = $<HTMLSelectElement>("[data-bug]");
+    const ide = $("[data-ide]");
+    const editor = $("[data-editor]");
+    const featurePanel = $('[data-panel="feature"]');
+    const xmlEl = $("[data-xml]");
+    const consoleEl = $("[data-console]");
+    const runState = $("[data-runstate]");
+    const report = $("[data-report]");
+    const live = $("[data-live]");
+    const rerun = $<HTMLButtonElement>("[data-rerun]");
+    const stepRows = $$("[data-step]");
+    const scenRow = $("[data-scen]");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    let running = false;
+    let runNo = 0;
+    const history: boolean[] = [];
+    let ids = mkIds();
+
+    // ---------- tabs ----------
+    function setupTabs(selector: string, attr: string, onSelect: (v: string) => void) {
+      const tabs = $$<HTMLButtonElement>(selector);
+      tabs.forEach((t, i) => {
+        t.addEventListener("click", () => onSelect(t.getAttribute(attr)!));
+        t.addEventListener("keydown", (e) => {
+          if (e.key !== "ArrowRight" && e.key !== "ArrowLeft" && e.key !== "Home" && e.key !== "End") return;
+          e.preventDefault();
+          const n = e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : (i + (e.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+          tabs[n].focus();
+          onSelect(tabs[n].getAttribute(attr)!);
+        });
+      });
+      return (v: string) => tabs.forEach((t) => {
+        const on = t.getAttribute(attr) === v;
+        t.setAttribute("aria-selected", String(on));
+        t.tabIndex = on ? 0 : -1;
+      });
+    }
+    const markFileTab = setupTabs("[data-tab]", "data-tab", (v) => showFile(v));
+    function showFile(v: string) {
+      markFileTab(v);
+      $$("[data-panel]").forEach((p) => (p.hidden = p.dataset.panel !== v));
+    }
+    const markMsgTab = setupTabs("[data-mtab]", "data-mtab", (v) => showMsg(v as "p8" | "p2"));
+
+    // ---------- message model ----------
+    function mkIds() {
+      const r = () => Math.random().toString(36).slice(2, 7).toUpperCase();
+      const now = new Date();
+      const d = now.toISOString().slice(0, 10).replace(/-/g, "");
+      return { msgId: `MSG-${d}-${r()}`, e2e: `E2E-${r()}`, csm: `CSM-${d}-${r()}`, ts: now.toISOString().slice(0, 19) + "Z" };
+    }
+    let msg: { bug: Bug; p2: "none" | "ACCP" | "RJCT"; current: "p8" | "p2" } = { bug: "none", p2: "none", current: "p8" };
+
+    function pacs008(bug: Bug): XLine[] {
+      const L: XLine[] = [
+        { t: '<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08">' },
+        { t: "  <FIToFICstmrCdtTrf>" },
+        { t: "    <GrpHdr>" },
+        { t: `      <MsgId>${ids.msgId}</MsgId>`, f: "msgId" },
+        { t: `      <CreDtTm>${ids.ts}</CreDtTm>` },
+        { t: "      <NbOfTxs>1</NbOfTxs>" },
+        { t: "      <SttlmInf><SttlmMtd>CLRG</SttlmMtd></SttlmInf>" },
+        { t: "    </GrpHdr>" },
+        { t: "    <CdtTrfTxInf>" },
+        { t: `      <PmtId><EndToEndId>${ids.e2e}</EndToEndId></PmtId>`, f: "e2e" },
+        { t: `      <IntrBkSttlmAmt Ccy="EUR">${bug === "decimal" ? "12000.00" : "120.00"}</IntrBkSttlmAmt>`, f: "amt", changed: bug === "decimal" },
+        { t: "      <ChrgBr>SLEV</ChrgBr>" },
+        { t: "      <Dbtr><Nm>Erika Mustermann</Nm></Dbtr>" },
+        { t: "      <DbtrAcct><Id><IBAN>DE89370400440532013000</IBAN></Id></DbtrAcct>", f: "dbtrAcct" },
+        { t: "      <DbtrAgt><FinInstnId><BICFI>BANKDEFFXXX</BICFI></FinInstnId></DbtrAgt>", f: "dbtrAgt" },
+        bug === "bic"
+          ? { t: "      <!-- expected <CdtrAgt> here: not mapped from MT103 :57A: -->", f: "cdtrAgt", gap: true }
+          : { t: "      <CdtrAgt><FinInstnId><BICFI>BANKFRPPXXX</BICFI></FinInstnId></CdtrAgt>", f: "cdtrAgt" },
+        { t: "      <Cdtr><Nm>Jean Dupont</Nm></Cdtr>" },
+        { t: "      <CdtrAcct><Id><IBAN>FR1420041010050500013M02606</IBAN></Id></CdtrAcct>", f: "cdtrAcct" },
+        { t: "    </CdtTrfTxInf>" },
+        { t: "  </FIToFICstmrCdtTrf>" },
+        { t: "</Document>" },
+      ];
+      return L;
+    }
+    function pacs002(status: "ACCP" | "RJCT"): XLine[] {
+      const L: XLine[] = [
+        { t: '<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.002.001.10">' },
+        { t: "  <FIToFIPmtStsRpt>" },
+        { t: "    <GrpHdr>" },
+        { t: `      <MsgId>${ids.csm}</MsgId>` },
+        { t: `      <CreDtTm>${ids.ts}</CreDtTm>` },
+        { t: "    </GrpHdr>" },
+        { t: "    <OrgnlGrpInfAndSts>" },
+        { t: `      <OrgnlMsgId>${ids.msgId}</OrgnlMsgId>`, f: "orgMsg" },
+        { t: "      <OrgnlMsgNmId>pacs.008.001.08</OrgnlMsgNmId>" },
+        { t: "    </OrgnlGrpInfAndSts>" },
+        { t: "    <TxInfAndSts>" },
+        { t: `      <OrgnlEndToEndId>${ids.e2e}</OrgnlEndToEndId>`, f: "e2e" },
+        { t: `      <TxSts>${status}</TxSts>`, f: "txSts", changed: status === "RJCT" },
+      ];
+      if (status === "RJCT") L.push({ t: "      <StsRsnInf><Rsn><Cd>AM04</Cd></Rsn></StsRsnInf>", f: "rsn", changed: true });
+      L.push({ t: "    </TxInfAndSts>" }, { t: "  </FIToFIPmtStsRpt>" }, { t: "</Document>" });
+      return L;
+    }
+
+    function showMsg(which: "p8" | "p2") {
+      msg.current = which;
+      markMsgTab(which);
+      $('[data-mtab="' + which + '"]').classList.remove("is-new");
+      renderXml();
+    }
+    function renderXml() {
+      if (msg.current === "p2" && msg.p2 === "none") {
+        xmlEl.innerHTML = running
+          ? '<div class="pd-wait"><span class="pd-spin"></span>Waiting for the clearing system’s pacs.002…</div>'
+          : '<div class="pd-wait">No status report yet. Run the scenario: the clearing system answers the pacs.008 with a pacs.002.</div>';
+        return;
+      }
+      const lines = msg.current === "p8" ? pacs008(msg.bug) : pacs002(msg.p2 as "ACCP" | "RJCT");
+      xmlEl.innerHTML = lines
+        .map((l, i) => `<span class="pd-xl${l.gap ? " gap" : ""}${l.changed ? " changed" : ""}"${l.f ? ` data-f="${l.f}"` : ""}><span class="pd-ln">${i + 1}</span>${l.gap ? esc(l.t) : hlXml(l.t)}</span>`)
+        .join("");
+    }
+    function markFields(fields: Field[], cls: "hl" | "ok" | "bad" | null) {
+      $$(".pd-xl").forEach((el) => {
+        if (!el.dataset.f || !fields.includes(el.dataset.f as Field)) return;
+        el.classList.remove("hl", "ok", "bad");
+        if (cls) el.classList.add(cls);
+      });
+      if (cls === "hl" || cls === "bad") {
+        const first = $$(".pd-xl").find((el) => el.dataset.f && fields.includes(el.dataset.f as Field));
+        if (first) scrollInto(xmlEl, first);
+      }
+    }
+    function clearFields() { $$(".pd-xl").forEach((el) => el.classList.remove("hl", "ok", "bad")); }
+
+    function scrollInto(container: HTMLElement, el: HTMLElement) {
+      const c = container.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      if (r.top < c.top + 8 || r.bottom > c.bottom - 8) {
+        container.scrollTo({ top: container.scrollTop + (r.top - c.top) - c.height / 3, behavior: reduced.matches ? "auto" : "smooth" });
+      }
+    }
+
+    // ---------- console ----------
+    let t0 = 0;
+    let virt = 0; // simulated ms since start
+    function log(html: string, cls = "") {
+      const div = document.createElement("div");
+      div.className = "pd-cl " + cls;
+      div.innerHTML = `<span class="pd-c-t">${(virt / 1000).toFixed(3).padStart(6, " ")}</span> ${html}`;
+      consoleEl.appendChild(div);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+    function plain(html: string, cls = "") {
+      const div = document.createElement("div");
+      div.className = "pd-cl " + cls;
+      div.innerHTML = html;
+      consoleEl.appendChild(div);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    // ---------- steps ----------
+    const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, reduced.matches ? Math.min(ms, 60) : ms));
+    const say = (s: string) => { live.textContent = s; };
+
+    function setStep(i: number, s: State, ms?: number) {
+      const row = stepRows[i];
+      row.dataset.state = s;
+      (row.querySelector(".pd-st") as HTMLElement).innerHTML = ICONS[s];
+      (row.querySelector(".pd-dur") as HTMLElement).textContent = s === "skipped" ? "skipped" : ms != null ? `${ms} ms` : "";
+      $$(`.pd-kl[data-k="${i}"]`).forEach((k) => {
+        k.classList.toggle("is-running", s === "running");
+        k.classList.toggle("is-failed", s === "failed");
+        k.classList.toggle("is-passed", s === "passed");
+      });
+      if (s === "running" && !featurePanel.hidden) scrollInto(featurePanel, row);
+      const ktPanel = $('[data-panel="kt"]');
+      const kFirst = $(`.pd-kl[data-k="${i}"]`);
+      if (s === "running" && !ktPanel.hidden && kFirst) scrollInto(ktPanel, kFirst);
+    }
+    function setScen(s: State, ms?: number) {
+      scenRow.dataset.state = s;
+      (scenRow.querySelector(".pd-st") as HTMLElement).innerHTML = s === "running" ? ICONS.idle : ICONS[s];
+      (scenRow.querySelector(".pd-dur") as HTMLElement).textContent = ms != null ? `${(ms / 1000).toFixed(2)} s` : "";
+    }
+
+    function jitter(ms: number) { return Math.max(4, Math.round(ms * (0.85 + Math.random() * 0.3))); }
+
+    // Each step: animate, log, return fail or null. Duration = simulated ms.
+    async function runStep(i: number, bug: Bug, ms: number): Promise<Failure | null> {
+      const tick = async (frac: number, wait: number) => { virt += Math.round(ms * frac); await sleep(wait); };
+      switch (i) {
+        case 0: {
+          msg.p2 = "none"; showMsg("p8");
+          markFields(["dbtrAcct"], "hl");
+          await tick(0.3, 260);
+          log(`<span class="pd-c-out">→ POST /testdata/accounts</span>  <span class="pd-c-ok">201 Created</span>`);
+          await tick(0.7, 320);
+          log(`<span class="pd-c-dim">  DE89…3000 balance=500.00 EUR</span>`);
+          if (bug === "funds") {
+            await sleep(140);
+            log(`<span class="pd-c-warn">  ! reservation RSV-1182 still holds 450.00 EUR (available 50.00)</span>`);
+          }
+          await sleep(160);
+          markFields(["dbtrAcct"], "ok");
+          return null;
+        }
+        case 1: {
+          msg.bug = bug; renderXml();
+          markFields(["amt", "cdtrAcct", "msgId", "e2e"], "hl");
+          await tick(0.15, 240);
+          log(`<span class="pd-c-dim">  MT103 :32A:${ids.ts.slice(2, 10).replace(/-/g, "")}EUR120,00 → pacs.008.001.08</span>`);
+          await tick(0.2, 380);
+          if (bug === "decimal") {
+            markFields(["amt"], "bad");
+            log(`<span class="pd-c-bad">  IntrBkSttlmAmt=12000.00 (expected 120.00)</span>`);
+            return {
+              title: "AssertionError",
+              where: "PaymentSteps.kt:27",
+              minus: 'IntrBkSttlmAmt Ccy="EUR"  120.00',
+              plus: 'IntrBkSttlmAmt Ccy="EUR"  12000.00',
+              note: "The MT103 amount “120,00” uses a comma as decimal mark; the converter stripped it instead of mapping it to a point. Caught before the message left the bank.",
+              raw: "Expecting actual:\n  12000.00\nto be equal to:\n  120.00\nwhen comparing values using 'BigDecimal::compareTo'",
+              short: "expected 120.00 but was 12000.00",
+            };
+          }
+          await tick(0.65, 360);
+          log(`<span class="pd-c-out">→ POST /iso20022/pacs.008</span>  <span class="pd-c-ok">202 Accepted</span>  <span class="pd-c-dim">${ids.msgId}</span>`);
+          await sleep(140);
+          markFields(["amt", "cdtrAcct", "msgId", "e2e"], "ok");
+          return null;
+        }
+        case 2: {
+          markFields(["dbtrAgt", "cdtrAgt"], "hl");
+          await tick(0.5, 360);
+          if (bug === "bic") {
+            markFields(["cdtrAgt"], "bad");
+            log(`<span class="pd-c-bad">  ✗ pacs.008.001.08.xsd: 1 error</span>`);
+            return {
+              title: "SAXParseException",
+              where: "line 16 · pacs.008.001.08.xsd",
+              minus: "<CdtrAgt> BICFI BANKFRPPXXX",
+              plus: "<Cdtr> found, <CdtrAgt> missing",
+              note: "The creditor agent from MT103 field :57A: was never mapped, so the message is invalid before it reaches clearing.",
+              raw: "cvc-complex-type.2.4.a: Invalid content was found starting with element 'Cdtr'. One of '{CdtrAgt}' is expected.",
+              short: "cvc-complex-type.2.4.a: element 'CdtrAgt' expected",
+            };
+          }
+          await tick(0.5, 200);
+          log(`<span class="pd-c-ok">  ✓ valid against pacs.008.001.08.xsd</span>`);
+          markFields(["dbtrAgt", "cdtrAgt"], "ok");
+          return null;
+        }
+        case 3: {
+          log(`<span class="pd-c-dim">  … awaiting pacs.002 for ${ids.e2e}</span>`);
+          showMsg("p2");
+          await tick(0.8, 820);
+          msg.p2 = bug === "funds" ? "RJCT" : "ACCP";
+          renderXml();
+          markFields(["txSts", "e2e", "orgMsg", "rsn"], "hl");
+          await tick(0.2, 280);
+          if (bug === "funds") {
+            log(`<span class="pd-c-in">← pacs.002</span> <span class="pd-c-bad">TxSts=RJCT  Rsn=AM04</span>`);
+            markFields(["txSts", "rsn"], "bad");
+            return {
+              title: "AssertionError",
+              where: "PaymentSteps.kt:39",
+              minus: 'TxSts "ACCP"',
+              plus: 'TxSts "RJCT"   StsRsnInf/Rsn/Cd AM04 (InsufficientFunds)',
+              note: "A stale 450.00 EUR reservation was never released, so only 50.00 EUR was available and clearing rejected the transfer.",
+              raw: 'expected: "ACCP"\n but was: "RJCT"',
+              short: 'expected "ACCP" but was "RJCT" (AM04)',
+            };
+          }
+          log(`<span class="pd-c-in">← pacs.002</span> <span class="pd-c-ok">TxSts=ACCP</span>`);
+          await sleep(160);
+          markFields(["txSts", "e2e", "orgMsg"], "ok");
+          return null;
+        }
+        default: {
+          showMsg("p8");
+          markFields(["dbtrAcct", "amt"], "hl");
+          await tick(0.5, 300);
+          log(`<span class="pd-c-out">→ GET /accounts/DE89…3000/balance</span>  <span class="pd-c-ok">200 OK</span>`);
+          await tick(0.5, 260);
+          log(`<span class="pd-c-in">←</span> <span class="pd-c-ok">380.00 EUR</span>`);
+          markFields(["dbtrAcct", "amt"], "ok");
+          return null;
+        }
+      }
+    }
+
+    function failBlock(f: Failure) {
+      const d = document.createElement("div");
+      d.className = "pd-err";
+      d.setAttribute("data-err", "");
+      d.innerHTML =
+        `<div class="pd-err-h">${esc(f.title)} <span>at ${esc(f.where)}</span></div>` +
+        `<div class="pd-diff"><div class="m"><b>− expected</b>  ${esc(f.minus)}</div><div class="p"><b>+ actual</b>    ${esc(f.plus)}</div></div>` +
+        `<div class="pd-err-note">${esc(f.note)}</div>`;
+      return d;
+    }
+
+    function resetView() {
+      $$("[data-err]").forEach((e) => e.remove());
+      stepRows.forEach((_, i) => setStep(i, "idle"));
+      setScen("idle");
+      clearFields();
+      consoleEl.innerHTML = "";
+      featurePanel.scrollTop = 0;
+    }
+
+    function setBusy(b: boolean) {
+      running = b;
+      runBtn.disabled = b;
+      rerun.disabled = b;
+      bugSel.disabled = b;
+      runLabel.textContent = b ? "Running…" : "Run scenario";
+      runState.className = "pd-runstate" + (b ? " is-run" : "");
+      if (b) runState.textContent = "running…";
+    }
+
+    async function run() {
+      if (running) return;
+      const bug = bugSel.value as Bug;
+      setBusy(true);
+      ids = mkIds();
+      msg = { bug: "none", p2: "none", current: "p8" };
+      showFile("feature");
+      resetView();
+      renderXml();
+      virt = 0;
+      t0 = performance.now();
+      plain(`<span class="pd-c-dim">$ ./gradlew cucumber -Dtags=@instant</span>`);
+      plain(`<b>Scenario: Customer sends an instant payment</b>`);
+      setScen("running");
+      say("Running scenario.");
+
+      const results: { state: State; ms: number }[] = [];
+      let failure: Failure | null = null;
+      let failedAt = -1;
+      for (let i = 0; i < stepRows.length; i++) {
+        if (failure) {
+          setStep(i, "skipped");
+          results.push({ state: "skipped", ms: 0 });
+          continue;
+        }
+        const ms = jitter(failure ? 0 : BASE_MS[i]) ;
+        setStep(i, "running");
+        say(`Step ${i + 1} of ${stepRows.length}: ${STEP_NAMES[i].join(" ")}`);
+        const start = virt;
+        const f = await runStep(i, bug, ms);
+        const took = Math.max(1, virt - start);
+        if (f) {
+          failure = f;
+          failedAt = i;
+          $$(".pd-xl.hl").forEach((el) => el.classList.remove("hl"));
+          setStep(i, "failed", took);
+          results.push({ state: "failed", ms: took });
+          const row = stepRows[i];
+          row.after(failBlock(f));
+          row.classList.remove("is-shake"); void row.offsetWidth; row.classList.add("is-shake");
+          ide.classList.remove("is-failflash"); void ide.offsetWidth; ide.classList.add("is-failflash");
+          log(`<span class="pd-c-bad">✗ ${esc(STEP_NAMES[i].join(" "))}: ${esc(f.short)}</span>`);
+          await sleep(120);
+          const err = row.nextElementSibling as HTMLElement;
+          if (err) scrollInto(featurePanel, err);
+        } else {
+          setStep(i, "passed", took);
+          const row = stepRows[i];
+          row.classList.remove("is-passflash"); void row.offsetWidth; row.classList.add("is-passflash");
+          results.push({ state: "passed", ms: took });
+          await sleep(120);
+        }
+      }
+      const total = virt + 30 + Math.round(Math.random() * 40);
+      const passed = results.filter((r) => r.state === "passed").length;
+      const failed = results.filter((r) => r.state === "failed").length;
+      const skipped = results.filter((r) => r.state === "skipped").length;
+      setScen(failure ? "failed" : "passed", total);
+
+      plain("");
+      plain(`1 Scenarios (${failure ? '<span class="pd-c-bad">1 failed</span>' : '<span class="pd-c-ok">1 passed</span>'})`);
+      const parts = [failed && `<span class="pd-c-bad">${failed} failed</span>`, skipped && `<span class="pd-c-dim">${skipped} skipped</span>`, passed && `<span class="pd-c-ok">${passed} passed</span>`].filter(Boolean);
+      plain(`${results.length} Steps (${parts.join(", ")})`);
+      plain(`<span class="pd-c-dim">0m${(total / 1000).toFixed(3)}s</span>`);
+
+      runNo++;
+      history.push(!failure);
+      setBusy(false);
+      runState.textContent = failure ? "failed" : "passed";
+      runState.className = "pd-runstate " + (failure ? "is-fail" : "is-pass");
+      renderReport(results, total, failure, failedAt);
+      say(failure
+        ? `Scenario failed at step ${failedAt + 1}: ${STEP_NAMES[failedAt].join(" ")}. ${failure.note}`
+        : `Scenario passed. ${passed} of ${results.length} steps passed in ${(total / 1000).toFixed(2)} seconds.`);
+    }
+
+    function renderReport(results: { state: State; ms: number }[], total: number, failure: Failure | null, failedAt: number) {
+      const n = results.length;
+      const passed = results.filter((r) => r.state === "passed").length;
+      const failed = results.filter((r) => r.state === "failed").length;
+      const skipped = n - passed - failed;
+      const wasHidden = report.hidden;
+      report.hidden = false;
+      report.classList.toggle("is-failed", !!failure);
+      if (!wasHidden) { report.style.animation = "none"; void report.offsetWidth; report.style.animation = ""; }
+      $("[data-runno]").textContent = `run #${runNo}`;
+      const badge = $("[data-badge]");
+      badge.textContent = failure ? "failed" : "passed";
+      badge.classList.toggle("is-failed", !!failure);
+      $('[data-n="pass"]').textContent = String(passed);
+      $('[data-n="fail"]').textContent = String(failed);
+      $('[data-n="skip"]').textContent = String(skipped);
+      $('[data-n="dur"]').textContent = total >= 1000 ? `${(total / 1000).toFixed(2)} s` : `${total} ms`;
+      $("[data-pct]").textContent = `${passed}/${n}`;
+      $("[data-donut]").setAttribute("aria-label", `${passed} passed, ${failed} failed, ${skipped} skipped`);
+
+      // donut segments (pathLength = 100, small gaps between segments)
+      const segs: [string, number][] = [["pass", passed], ["fail", failed], ["skip", skipped]];
+      const gap = [passed, failed, skipped].filter((x) => x > 0).length > 1 ? 1.6 : 0;
+      let off = 0;
+      segs.forEach(([k, v]) => {
+        const el = $(`[data-seg="${k}"]`) as unknown as SVGCircleElement;
+        const len = (v / n) * 100;
+        el.style.strokeDasharray = "0 100";
+        el.style.strokeDashoffset = String(-off);
+        const final = v ? `${Math.max(0, len - gap)} ${100 - Math.max(0, len - gap)}` : "0 100";
+        requestAnimationFrame(() => requestAnimationFrame(() => { el.style.strokeDasharray = final; }));
+        off += len;
+      });
+
+      // timeline (gantt-like)
+      const span = Math.max(1, results.reduce((a, r) => a + r.ms, 0));
+      let start = 0;
+      const rows = results.map((r, i) => {
+        const left = (start / span) * 100;
+        const w = r.state === "skipped" ? 0 : Math.max(1.5, (r.ms / span) * 100);
+        start += r.ms;
+        const bar = r.state === "skipped"
+          ? `<span class="pd-tl-bar skipped" style="left:0;right:0"></span>`
+          : `<span class="pd-tl-bar ${r.state}" style="left:${left}%;width:${Math.min(w, 100 - left)}%;animation-delay:${i * 90}ms"></span>`;
+        return `<div class="pd-tl-row"><span class="pd-tl-name"><b>${STEP_NAMES[i][0]}</b> ${esc(STEP_NAMES[i][1])}</span><span class="pd-tl-track">${bar}</span><span class="pd-tl-ms">${r.state === "skipped" ? "–" : r.ms + " ms"}</span></div>`;
+      });
+      $("[data-timeline]").innerHTML = `<div class="pd-tl-h"><span>Timeline</span><span>${span} ms in steps</span></div>` + rows.join("");
+
+      const fb = $("[data-failbox]");
+      if (failure) {
+        fb.hidden = false;
+        fb.innerHTML = `<h4>Failed: ${esc(STEP_NAMES[failedAt].join(" "))}</h4><code>${esc(failure.raw)}</code><p>${esc(failure.note)}</p>`;
+      } else {
+        fb.hidden = true;
+        fb.innerHTML = "";
+      }
+      $("[data-history]").innerHTML = history.slice(-12).map((ok, i, a) => `<i class="${ok ? "" : "f"}" title="Run #${runNo - a.length + i + 1}: ${ok ? "passed" : "failed"}"></i>`).join("");
+    }
+
+    // ---------- wiring ----------
+    function syncArmed() {
+      const armed = bugSel.value !== "none";
+      bugSel.classList.toggle("is-armed", armed);
+      runBtn.classList.toggle("is-armed", armed);
+    }
+    bugSel.addEventListener("change", syncArmed);
+    runBtn.addEventListener("click", run);
+    rerun.addEventListener("click", () => {
+      run();
+      ide.scrollIntoView({ behavior: reduced.matches ? "auto" : "smooth", block: "start" });
+    });
+
+    stepRows.forEach((_, i) => setStep(i, "idle"));
+    setScen("idle");
+    syncArmed();
+    renderXml();
+    void editor;
+    root.dataset.ready = "1";
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-pd]").forEach(init);
+</script>

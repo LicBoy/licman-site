@@ -1,5 +1,613 @@
 ---
-// Placeholder: replaced by the real interactive demo.
+// Super-resolution chapter demo: drag-to-compare bicubic vs ESRGAN (or raw input pixels vs ESRGAN),
+// with a 3x magnifier loupe that is split by the divider too. Real outputs from the thesis live in /public/sr.
+const images = [
+  { id: "baby", name: "Baby", size: 1008, input: 252 },
+  { id: "bird", name: "Bird", size: 576, input: 144 },
+  { id: "butterfly", name: "Butterfly", size: 504, input: 126 },
+];
+const first = images[0];
 ---
-<div class="ph">SrDemo</div>
-<style>.ph{aspect-ratio:4/3;border:2px dashed var(--line);border-radius:var(--radius);display:grid;place-items:center;font-family:var(--font-mono);color:var(--muted)}</style>
+<figure class="srd" data-srd data-images={JSON.stringify(images)}>
+  <div class="srd-top">
+    <div class="srd-seg" role="group" aria-label="What to compare with ESRGAN">
+      <button type="button" class="srd-seg-btn" data-mode="bicubic" aria-pressed="true">
+        Bicubic<span class="srd-vs"> vs ESRGAN</span>
+      </button>
+      <button type="button" class="srd-seg-btn" data-mode="lr" aria-pressed="false">
+        Input pixels<span class="srd-vs"> vs ESRGAN</span>
+      </button>
+    </div>
+    <button type="button" class="srd-zoom" aria-pressed="false" aria-label="Magnifier loupe" title="Magnifier loupe (3×)">
+      <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8 10.5h5M10.5 8v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span class="srd-zoom-label">Zoom</span>
+    </button>
+  </div>
+
+  <div class="srd-frame" style="--pos:50%">
+    <img class="srd-img srd-a" src={`/sr/${first.id}-bicubic.webp`} width={first.size} height={first.size}
+      alt={`${first.name}: 4× bicubic upscale`} loading="lazy" decoding="async" draggable="false" />
+    <img class="srd-img srd-b" src={`/sr/${first.id}-esrgan.webp`} width={first.size} height={first.size}
+      alt={`${first.name}: 4× ESRGAN upscale`} loading="lazy" decoding="async" draggable="false" />
+
+    <span class="srd-chip srd-chip-l" aria-hidden="true"><i></i><b class="srd-chip-l-text">Bicubic</b></span>
+    <span class="srd-chip srd-chip-r" aria-hidden="true"><i></i><b>ESRGAN</b></span>
+
+    <div class="srd-divider">
+      <div class="srd-handle" role="slider" tabindex="0" aria-label="Comparison divider"
+        aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"
+        aria-valuetext="50%: left half bicubic, right half ESRGAN">
+        <svg viewBox="0 0 32 16" width="26" height="13" aria-hidden="true"><path d="M10 2 4 8l6 6M22 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+
+    <div class="srd-loupe" aria-hidden="true">
+      <div class="srd-lens srd-lens-a"></div>
+      <div class="srd-lens srd-lens-b"></div>
+      <div class="srd-lens-line"></div>
+      <span class="srd-lens-tag">3×</span>
+    </div>
+
+    <div class="srd-loading" aria-hidden="true"><span></span></div>
+  </div>
+
+  <figcaption class="srd-cap">
+    <span class="srd-cap-text" aria-live="polite">Same {first.input}×{first.input} input. Left: bicubic interpolation. Right: my ESRGAN.</span>
+    <span class="srd-hint">Drag to compare · hover to magnify</span>
+  </figcaption>
+
+  <div class="srd-picker" role="group" aria-label="Test image">
+    {images.map((im, i) => (
+      <button type="button" class="srd-pick" data-img={im.id} aria-pressed={i === 0 ? "true" : "false"}>
+        <img src={`/sr/${im.id}-bicubic.webp`} width="56" height="56" alt="" loading="lazy" decoding="async" />
+        <span class="srd-pick-txt">
+          <span class="srd-pick-name">{im.name}</span>
+          <span class="srd-pick-size">{im.input}<span class="srd-px"> px</span> → {im.size} px</span>
+        </span>
+      </button>
+    ))}
+  </div>
+  <p class="srd-note">Set5 benchmark images; the models were trained on CelebA faces.</p>
+</figure>
+
+<style>
+  .srd {
+    --srd-accent: var(--accent, #8b5cf6);
+    margin: 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: clamp(12px, 2.4vw, 20px);
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+    container: srd / inline-size;
+  }
+
+  /* ---------- top bar ---------- */
+  .srd-top { display: flex; gap: 10px; align-items: center; justify-content: space-between; min-width: 0; }
+  .srd-seg {
+    display: flex; padding: 4px; gap: 2px; border-radius: 999px;
+    background: var(--paper-2); min-width: 0; flex: 0 1 auto;
+  }
+  .srd-seg-btn {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    font: 600 13.5px/1 var(--font-body); color: var(--muted);
+    padding: 9px 14px; border-radius: 999px; white-space: nowrap;
+    transition: background .2s, color .2s, box-shadow .2s;
+  }
+  .srd-seg-btn:hover { color: var(--ink); }
+  .srd-seg-btn[aria-pressed="true"] {
+    background: var(--card); color: var(--ink);
+    box-shadow: 0 1px 2px rgba(25, 23, 20, .08), 0 0 0 1px color-mix(in srgb, var(--srd-accent) 35%, transparent);
+  }
+  .srd-vs { color: var(--muted); font-weight: 500; }
+  .srd-seg-btn[aria-pressed="true"] .srd-vs { color: var(--srd-accent); }
+  .srd-zoom {
+    appearance: none; cursor: pointer; flex: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    font: 600 13.5px/1 var(--font-body); color: var(--ink-2);
+    padding: 8px 13px; border-radius: 999px;
+    border: 1.5px solid var(--line); background: var(--card);
+    transition: background .2s, color .2s, border-color .2s;
+  }
+  .srd-zoom:hover { border-color: color-mix(in srgb, var(--srd-accent) 50%, var(--line)); }
+  .srd-zoom[aria-pressed="true"] { background: var(--srd-accent); border-color: var(--srd-accent); color: #fff; }
+
+  /* ---------- frame ---------- */
+  .srd-frame {
+    position: relative; aspect-ratio: 1 / 1; width: 100%;
+    border-radius: 12px; overflow: hidden;
+    background: var(--paper-2);
+    touch-action: pan-y;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    cursor: ew-resize;
+    isolation: isolate;
+  }
+  .srd-frame.is-zooming { touch-action: none; cursor: crosshair; }
+  .srd-frame.has-loupe { cursor: none; }
+  .srd-img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; pointer-events: none;
+  }
+  .srd-b { clip-path: inset(0 0 0 var(--pos)); }
+  .srd-frame.is-pixels .srd-a { image-rendering: pixelated; }
+
+  .srd-chip {
+    position: absolute; top: 12px; z-index: 2;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 10px 6px 9px; border-radius: 999px;
+    font: 600 11.5px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;
+    color: #fff; background: rgba(20, 17, 28, .58);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    transition: opacity .25s;
+    pointer-events: none;
+  }
+  .srd-chip b { font-weight: 600; }
+  .srd-chip i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, .7); }
+  .srd-chip-l { left: 12px; }
+  .srd-chip-r { right: 12px; }
+  .srd-chip-r i { background: var(--srd-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--srd-accent) 35%, transparent); }
+
+  .srd-divider {
+    position: absolute; top: 0; bottom: 0; left: var(--pos); z-index: 3;
+    width: 0; pointer-events: none;
+  }
+  .srd-divider::before {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -1px; width: 2px;
+    background: #fff; box-shadow: 0 0 0 1px rgba(20, 17, 28, .12), 0 0 14px rgba(20, 17, 28, .25);
+  }
+  .srd-handle {
+    position: absolute; top: 50%; left: 0; transform: translate(-50%, -50%);
+    width: 46px; height: 46px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--srd-accent); color: #fff;
+    border: 3px solid #fff;
+    box-shadow: 0 6px 20px -4px color-mix(in srgb, var(--srd-accent) 70%, transparent), 0 2px 6px rgba(20, 17, 28, .25);
+    pointer-events: auto; cursor: ew-resize; touch-action: none;
+    transition: transform .18s cubic-bezier(.2, .8, .3, 1.4);
+    outline: none;
+  }
+  .srd-handle:hover, .srd-frame.is-dragging .srd-handle { transform: translate(-50%, -50%) scale(1.08); }
+  .srd-handle:focus-visible {
+    box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--srd-accent), 0 6px 20px -4px color-mix(in srgb, var(--srd-accent) 70%, transparent);
+  }
+
+  /* ---------- loupe ---------- */
+  .srd-loupe {
+    --d: 170px;
+    position: absolute; left: 0; top: 0; z-index: 5;
+    width: var(--d); height: var(--d); border-radius: 50%;
+    overflow: hidden; pointer-events: none;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 1.5px var(--srd-accent), 0 18px 40px -10px rgba(20, 17, 28, .5);
+    background: var(--paper-2);
+    opacity: 0; transform: scale(.6);
+    transition: opacity .16s ease, transform .2s cubic-bezier(.2, .8, .3, 1.2);
+    will-change: translate;
+  }
+  .srd-loupe.is-on { opacity: 1; transform: scale(1); }
+  .srd-lens { position: absolute; inset: 0; background-repeat: no-repeat; }
+  .srd-frame.is-pixels .srd-lens-a { image-rendering: pixelated; }
+  .srd-lens-line {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 2px; margin-left: -1px;
+    background: #fff; box-shadow: 0 0 8px rgba(20, 17, 28, .4);
+  }
+  .srd-lens-tag {
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    font: 600 10.5px/1 var(--font-mono); color: #fff;
+    background: rgba(20, 17, 28, .55); padding: 4px 6px; border-radius: 6px;
+  }
+
+  /* ---------- loading ---------- */
+  .srd-loading {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 3px; z-index: 6;
+    opacity: 0; transition: opacity .2s; overflow: hidden;
+  }
+  .srd-loading span {
+    position: absolute; top: 0; bottom: 0; width: 35%; background: var(--srd-accent);
+    animation: srd-load 1s ease-in-out infinite;
+  }
+  .srd-frame[aria-busy="true"] .srd-loading { opacity: 1; }
+  @keyframes srd-load { from { left: -35%; } to { left: 100%; } }
+
+  /* ---------- caption ---------- */
+  .srd-cap { display: grid; gap: 4px; padding: 0 2px; }
+  .srd-cap-text { font-size: 15px; color: var(--ink-2); line-height: 1.45; }
+  .srd-hint { font: 500 12px/1.3 var(--font-mono); color: var(--muted); letter-spacing: .02em; }
+
+  /* ---------- picker ---------- */
+  .srd-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .srd-pick {
+    appearance: none; cursor: pointer; text-align: left; min-width: 0;
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 10px 6px 6px; border-radius: 12px;
+    border: 1.5px solid var(--line); background: var(--card); color: var(--ink);
+    transition: border-color .2s, background .2s, transform .15s;
+  }
+  .srd-pick:hover { border-color: color-mix(in srgb, var(--srd-accent) 45%, var(--line)); }
+  .srd-pick:active { transform: scale(.98); }
+  .srd-pick[aria-pressed="true"] {
+    border-color: var(--srd-accent);
+    background: color-mix(in srgb, var(--srd-accent) 7%, var(--card));
+  }
+  .srd-pick img {
+    width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex: none;
+    background: var(--paper-2);
+  }
+  .srd-pick[aria-pressed="true"] img { box-shadow: 0 0 0 2px var(--srd-accent); }
+  .srd-pick-txt { display: grid; gap: 3px; min-width: 0; }
+  .srd-pick-name { font: 600 14px/1.1 var(--font-display); }
+  .srd-pick-size { font: 500 11px/1.2 var(--font-mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .srd-note { font-size: 12.5px; color: var(--muted); padding: 0 2px; margin-top: -4px; }
+
+  @container srd (max-width: 540px) {
+    .srd-zoom-label { display: none; }
+    .srd-zoom { padding: 9px 11px; }
+    .srd-picker { gap: 6px; }
+    .srd-pick { flex-direction: column; align-items: stretch; padding: 5px 5px 8px; gap: 7px; text-align: center; }
+    .srd-pick img { width: 100%; height: auto; aspect-ratio: 16 / 10; }
+    .srd-pick-size { font-size: 10.5px; }
+    .srd-px { display: none; }
+  }
+  @container srd (max-width: 390px) {
+    .srd-vs { display: none; }
+    .srd-seg-btn { padding: 9px 13px; }
+    .srd-loupe { --d: 140px; }
+    .srd-chip { top: 9px; font-size: 10.5px; padding: 5px 8px 5px 7px; }
+    .srd-chip-l { left: 9px; }
+    .srd-chip-r { right: 9px; }
+    .srd-cap-text { font-size: 14.5px; }
+  }
+  @container srd (max-width: 300px) {
+    .srd-pick-size { white-space: normal; font-size: 10px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .srd-loupe, .srd-handle, .srd-chip { transition: none; }
+    .srd-loading span { animation-duration: 3s; }
+  }
+</style>
+
+<script>
+  type ImgInfo = { id: string; name: string; size: number; input: number };
+  type Mode = "bicubic" | "lr";
+
+  const ZOOM = 3;
+
+  function init(root: HTMLElement) {
+    const images: ImgInfo[] = JSON.parse(root.dataset.images || "[]");
+    const frame = root.querySelector<HTMLElement>(".srd-frame")!;
+    const imgA = root.querySelector<HTMLImageElement>(".srd-a")!;
+    const imgB = root.querySelector<HTMLImageElement>(".srd-b")!;
+    const handle = root.querySelector<HTMLElement>(".srd-handle")!;
+    const chipL = root.querySelector<HTMLElement>(".srd-chip-l")!;
+    const chipLText = root.querySelector<HTMLElement>(".srd-chip-l-text")!;
+    const chipR = root.querySelector<HTMLElement>(".srd-chip-r")!;
+    const loupe = root.querySelector<HTMLElement>(".srd-loupe")!;
+    const lensA = root.querySelector<HTMLElement>(".srd-lens-a")!;
+    const lensB = root.querySelector<HTMLElement>(".srd-lens-b")!;
+    const lensLine = root.querySelector<HTMLElement>(".srd-lens-line")!;
+    const capText = root.querySelector<HTMLElement>(".srd-cap-text")!;
+    const hint = root.querySelector<HTMLElement>(".srd-hint")!;
+    const zoomBtn = root.querySelector<HTMLButtonElement>(".srd-zoom")!;
+    const modeBtns = Array.from(root.querySelectorAll<HTMLButtonElement>(".srd-seg-btn"));
+    const pickBtns = Array.from(root.querySelectorAll<HTMLButtonElement>(".srd-pick"));
+
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+    const canHover = matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+    let current = images[0];
+    let mode: Mode = "bicubic";
+    let pos = 50;
+    let zoomOn = canHover; // desktop: hover loupe on by default; touch: opt-in toggle
+    let introDone = false;
+    let introRaf = 0;
+    let swapToken = 0;
+
+    // ---------- image cache / preload ----------
+    const cache = new Map<string, Promise<void>>();
+    function preload(url: string) {
+      let p = cache.get(url);
+      if (!p) {
+        const im = new Image();
+        im.decoding = "async";
+        im.src = url;
+        p = (im.decode ? im.decode() : new Promise<void>((res) => { im.onload = () => res(); }))
+          .catch(() => new Promise<void>((res) => { if (im.complete) res(); else { im.onload = () => res(); im.onerror = () => res(); } }));
+        cache.set(url, p);
+      }
+      return p;
+    }
+    const urlA = (im: ImgInfo, m: Mode) => `/sr/${im.id}-${m === "lr" ? "lr" : "bicubic"}.webp`;
+    const urlB = (im: ImgInfo) => `/sr/${im.id}-esrgan.webp`;
+
+    // ---------- position ----------
+    function setPos(p: number) {
+      pos = Math.max(0, Math.min(100, p));
+      frame.style.setProperty("--pos", pos + "%");
+      const r = Math.round(pos);
+      handle.setAttribute("aria-valuenow", String(r));
+      const leftName = mode === "lr" ? "input pixels" : "bicubic";
+      handle.setAttribute("aria-valuetext", `${r}%: left ${r}% ${leftName}, right ${100 - r}% ESRGAN`);
+      chipL.style.opacity = pos < 22 ? String(Math.max(0, (pos - 8) / 14)) : "1";
+      chipR.style.opacity = pos > 78 ? String(Math.max(0, (92 - pos) / 14)) : "1";
+      if (loupeVisible) drawLoupe();
+    }
+
+    function cancelIntro() {
+      if (introRaf) { cancelAnimationFrame(introRaf); introRaf = 0; }
+      introDone = true;
+    }
+
+    // ---------- loupe ----------
+    let loupeVisible = false;
+    let lx = 0, ly = 0; // pointer in frame coords (px)
+    let loupeOffsetY = 0; // touch: lift the loupe above the finger
+    function frameSize() { return frame.clientWidth; }
+    function showLoupe(on: boolean) {
+      loupeVisible = on;
+      loupe.classList.toggle("is-on", on);
+      frame.classList.toggle("has-loupe", on && !touchActive);
+      if (on) drawLoupe();
+    }
+    function drawLoupe() {
+      const S = frameSize();
+      const D = loupe.offsetWidth;
+      const px = Math.max(0, Math.min(S, lx));
+      const py = Math.max(0, Math.min(S, ly));
+      // loupe centre: at the pointer (mouse) or lifted above the finger (touch), kept inside the frame
+      let cx = px, cy = py - loupeOffsetY;
+      if (loupeOffsetY && cy - D / 2 < 0) {
+        // no room above the finger: park the loupe beside it instead
+        cy = py;
+        cx = px > S / 2 ? px - loupeOffsetY : px + loupeOffsetY;
+      }
+      cx = Math.max(D / 2, Math.min(S - D / 2, cx));
+      cy = Math.max(D / 2, Math.min(S - D / 2, cy));
+      loupe.style.translate = `${cx - D / 2}px ${cy - D / 2}px`;
+      const big = S * ZOOM;
+      const bx = D / 2 - px * ZOOM, by = D / 2 - py * ZOOM;
+      for (const l of [lensA, lensB]) {
+        l.style.backgroundSize = `${big}px ${big}px`;
+        l.style.backgroundPosition = `${bx}px ${by}px`;
+      }
+      const split = D / 2 + ((pos / 100) * S - px) * ZOOM;
+      const cl = Math.max(0, Math.min(D, split));
+      lensB.style.clipPath = `inset(0 0 0 ${cl}px)`;
+      lensLine.style.left = `${split}px`;
+      lensLine.style.display = split > -2 && split < D + 2 ? "" : "none";
+    }
+    function syncLensImages() {
+      lensA.style.backgroundImage = `url("${imgA.currentSrc || imgA.src}")`;
+      lensB.style.backgroundImage = `url("${imgB.currentSrc || imgB.src}")`;
+    }
+
+    // ---------- captions ----------
+    function updateText() {
+      const n = current.input;
+      capText.textContent = mode === "lr"
+        ? `Same ${n}×${n} input. Left: the input pixels, enlarged as-is. Right: my ESRGAN, 4×.`
+        : `Same ${n}×${n} input. Left: bicubic interpolation. Right: my ESRGAN.`;
+      chipLText.textContent = mode === "lr" ? `Input ${n}px` : "Bicubic";
+      imgA.alt = mode === "lr" ? `${current.name}: ${n}×${n} input, pixels enlarged 4×` : `${current.name}: 4× bicubic upscale`;
+      imgB.alt = `${current.name}: 4× ESRGAN upscale`;
+    }
+
+    async function apply(next: ImgInfo, nextMode: Mode) {
+      const token = ++swapToken;
+      const a = urlA(next, nextMode), b = urlB(next);
+      const slow = window.setTimeout(() => { if (token === swapToken) frame.setAttribute("aria-busy", "true"); }, 120);
+      await Promise.all([preload(a), preload(b)]);
+      clearTimeout(slow);
+      if (token !== swapToken) return;
+      frame.removeAttribute("aria-busy");
+      current = next; mode = nextMode;
+      for (const im of [imgA, imgB]) { im.width = next.size; im.height = next.size; im.loading = "eager"; }
+      imgA.src = a; imgB.src = b;
+      frame.classList.toggle("is-pixels", nextMode === "lr");
+      lensA.style.backgroundImage = `url("${a}")`;
+      lensB.style.backgroundImage = `url("${b}")`;
+      updateText();
+      setPos(pos);
+    }
+
+    // ---------- controls ----------
+    modeBtns.forEach((btn) => btn.addEventListener("click", () => {
+      const m = btn.dataset.mode as Mode;
+      modeBtns.forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+      apply(current, m);
+    }));
+    pickBtns.forEach((btn) => {
+      const im = images.find((i) => i.id === btn.dataset.img)!;
+      btn.addEventListener("click", () => {
+        pickBtns.forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+        apply(im, mode);
+      });
+      // warm the cache on intent
+      const warm = () => { preload(urlA(im, mode)); preload(urlB(im)); };
+      btn.addEventListener("pointerenter", warm);
+      btn.addEventListener("focus", warm);
+    });
+    function setZoom(on: boolean) {
+      zoomOn = on;
+      zoomBtn.setAttribute("aria-pressed", String(on));
+      frame.classList.toggle("is-zooming", on && !canHover);
+      if (!on) showLoupe(false);
+      hint.textContent = canHover
+        ? (on ? "Drag to compare · hover to magnify 3×" : "Drag to compare · zoom is off")
+        : (on ? "Zoom on: drag on the picture to magnify" : "Drag to compare · long-press to magnify 3×");
+    }
+    zoomBtn.addEventListener("click", () => setZoom(!zoomOn));
+
+    // keyboard on the slider
+    handle.addEventListener("keydown", (e) => {
+      const step = e.shiftKey ? 10 : 2;
+      let p = pos;
+      switch (e.key) {
+        case "ArrowLeft": case "ArrowDown": p -= step; break;
+        case "ArrowRight": case "ArrowUp": p += step; break;
+        case "PageDown": p -= 10; break;
+        case "PageUp": p += 10; break;
+        case "Home": p = 0; break;
+        case "End": p = 100; break;
+        default: return;
+      }
+      e.preventDefault();
+      cancelIntro();
+      setPos(p);
+    });
+
+    // ---------- pointer interaction ----------
+    let dragging = false;
+    let touchActive = false;
+    let touchLoupe = false;
+    let pid = -1;
+    let sx = 0, sy = 0;
+    let longTimer = 0;
+
+    function local(e: PointerEvent) {
+      const r = frame.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top, w: r.width };
+    }
+    function posFromEvent(e: PointerEvent) {
+      const { x, w } = local(e);
+      return (x / w) * 100;
+    }
+    function moveLoupeTo(e: PointerEvent) {
+      const { x, y } = local(e);
+      lx = x; ly = y;
+      drawLoupe();
+    }
+    function startDrag(e: PointerEvent) {
+      dragging = true;
+      cancelIntro();
+      frame.classList.add("is-dragging");
+      try { frame.setPointerCapture(e.pointerId); } catch {}
+      setPos(posFromEvent(e));
+    }
+    function startTouchLoupe(e: PointerEvent) {
+      touchLoupe = true;
+      cancelIntro();
+      try { frame.setPointerCapture(e.pointerId); } catch {}
+      loupeOffsetY = loupe.offsetWidth / 2 + 34;
+      lx = sx; ly = sy;
+      showLoupe(true);
+      if (navigator.vibrate) { try { navigator.vibrate(8); } catch {} }
+    }
+    function endGesture() {
+      clearTimeout(longTimer);
+      if (dragging) frame.classList.remove("is-dragging");
+      dragging = false;
+      if (touchLoupe) showLoupe(false);
+      touchLoupe = false;
+      touchActive = false;
+      pid = -1;
+    }
+
+    frame.addEventListener("pointerdown", (e) => {
+      if (pid !== -1 && e.pointerId !== pid) return;
+      if (e.pointerType === "mouse") {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        pid = e.pointerId;
+        startDrag(e);
+        if (zoomOn) moveLoupeTo(e);
+        return;
+      }
+      // touch / pen
+      pid = e.pointerId;
+      touchActive = true;
+      const { x, y } = local(e);
+      sx = x; sy = y;
+      const onHandle = handle.contains(e.target as Node);
+      if (onHandle) { startDrag(e); return; }
+      if (zoomOn) { startTouchLoupe(e); return; }
+      longTimer = window.setTimeout(() => { if (!dragging) startTouchLoupe(e); }, 380);
+    });
+
+    frame.addEventListener("pointermove", (e) => {
+      if (e.pointerType === "mouse") {
+        if (dragging) setPos(posFromEvent(e));
+        if (zoomOn) {
+          if (!loupeVisible) { loupeOffsetY = 0; showLoupe(true); }
+          moveLoupeTo(e);
+        }
+        return;
+      }
+      if (e.pointerId !== pid) return;
+      if (touchLoupe) { moveLoupeTo(e); return; }
+      if (dragging) { setPos(posFromEvent(e)); return; }
+      const { x, y } = local(e);
+      const dx = Math.abs(x - sx), dy = Math.abs(y - sy);
+      if (dx > 6 || dy > 6) clearTimeout(longTimer);
+      if (dx > 6 && dx > dy) startDrag(e);
+    });
+
+    frame.addEventListener("pointerup", (e) => {
+      if (e.pointerId !== pid) return;
+      // a quick tap jumps the divider to that spot
+      if (e.pointerType !== "mouse" && !dragging && !touchLoupe) { cancelIntro(); setPos(posFromEvent(e)); }
+      endGesture();
+    });
+    frame.addEventListener("pointercancel", (e) => { if (e.pointerId === pid) endGesture(); });
+    frame.addEventListener("pointerleave", (e) => {
+      if (e.pointerType === "mouse" && !dragging) showLoupe(false);
+    });
+    frame.addEventListener("lostpointercapture", (e) => {
+      if (e.pointerId === pid && e.pointerType === "mouse") {
+        frame.classList.remove("is-dragging"); dragging = false; pid = -1;
+      }
+    });
+    // while a touch-loupe gesture is active, stop the page from scrolling
+    frame.addEventListener("touchmove", (e) => { if (touchLoupe || dragging) e.preventDefault(); }, { passive: false });
+    frame.addEventListener("contextmenu", (e) => e.preventDefault());
+
+    // keep the loupe geometry right if the layout changes
+    new ResizeObserver(() => { if (loupeVisible) drawLoupe(); }).observe(frame);
+
+    // ---------- intro sweep ----------
+    function runIntro() {
+      if (introDone) return;
+      if (reduced.matches) { introDone = true; setPos(50); return; }
+      const start = performance.now();
+      const dur = 1500;
+      // 0 -> overshoot ~62 -> settle at 50
+      const ease = (t: number) => {
+        const c1 = 1.25, c3 = c1 + 1;
+        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+      };
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / dur);
+        setPos(50 * ease(t));
+        if (t < 1) introRaf = requestAnimationFrame(tick);
+        else { introRaf = 0; introDone = true; }
+      };
+      introRaf = requestAnimationFrame(tick);
+    }
+
+    if (!reduced.matches) setPos(0); else setPos(50);
+    setZoom(zoomOn);
+    syncLensImages();
+    updateText();
+
+    const io = new IntersectionObserver((entries) => {
+      for (const en of entries) {
+        if (!en.isIntersecting) continue;
+        io.disconnect();
+        imgA.loading = "eager"; imgB.loading = "eager";
+        const a = imgA.currentSrc || imgA.src, b = imgB.currentSrc || imgB.src;
+        Promise.all([preload(a), preload(b)]).then(() => {
+          setTimeout(runIntro, 200);
+          // warm the rest quietly once the visible pair is in
+          const idle = (window as any).requestIdleCallback || ((f: () => void) => setTimeout(f, 800));
+          idle(() => images.forEach((im) => { preload(urlB(im)); preload(urlA(im, "bicubic")); }));
+        });
+      }
+    }, { threshold: 0.4 });
+    io.observe(frame);
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-srd]").forEach(init);
+</script>

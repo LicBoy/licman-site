@@ -43,9 +43,10 @@ const { id, num, kicker, title, accent, dark = false, flip = false, stats = [], 
   .chapter { padding: clamp(64px, 9vw, 120px) 0; border-top: 1px solid var(--line); position: relative; }
   .chapter.dark { background: #0d1024; color: #e8e9f5; border-top: 0; --muted: #a1a5c4; --ink-2: #cfd1e6; --paper-2: #1c2142; --line: #262b52; }
   .inner { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(32px, 5vw, 72px); align-items: start; }
+  .flip .inner { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); }
   .flip .story { order: 2; }
   @media (max-width: 920px) {
-    .inner { grid-template-columns: minmax(0, 1fr); }
+    .inner, .flip .inner { grid-template-columns: minmax(0, 1fr); }
     .flip .story { order: 0; }
   }
   .story { position: sticky; top: 32px; }

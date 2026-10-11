@@ -1,5 +1,1143 @@
 ---
-// Placeholder: replaced by the real interactive demo.
+// Rahat Go: "a working phone". One shared state, three roles (Customer / Staff / Owner).
+// Everything inside the phone is rendered by the script below from src/data/rahat-menu.json.
+const rays = Array.from({ length: 12 }, (_, i) => {
+  const a = (i / 12) * Math.PI * 2;
+  return `<circle cx="${(20 + Math.cos(a) * 13.2).toFixed(2)}" cy="${(20 + Math.sin(a) * 13.2).toFixed(2)}" r="2.6"/>`;
+}).join("");
+const logo = `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19.5" fill="#fff1d9"/><g fill="#f0a43a">${rays}</g><circle cx="20" cy="20" r="9.2" fill="#e8962a"/><circle cx="20" cy="20" r="5.4" fill="#fff6e6"/></svg>`;
 ---
-<div class="ph">RahatDemo</div>
-<style>.ph{aspect-ratio:4/3;border:2px dashed var(--line);border-radius:var(--radius);display:grid;place-items:center;font-family:var(--font-mono);color:var(--muted)}</style>
+<div class="rh" data-rahat>
+  <div class="rh-top">
+    <div class="rh-seg" role="group" aria-label="Choose a role">
+      <span class="rh-seg-pill" aria-hidden="true"></span>
+      <button type="button" class="rh-seg-btn" data-role="customer" aria-pressed="true">
+        <span class="rh-seg-t">Customer</span><span class="rh-seg-s">orders in Telegram</span>
+      </button>
+      <button type="button" class="rh-seg-btn" data-role="staff" aria-pressed="false">
+        <span class="rh-seg-t">Staff <i class="rh-seg-dot" data-dot="staff" hidden></i></span><span class="rh-seg-s">runs the queue</span>
+      </button>
+      <button type="button" class="rh-seg-btn" data-role="owner" aria-pressed="false">
+        <span class="rh-seg-t">Owner <i class="rh-seg-dot" data-dot="owner" hidden></i></span><span class="rh-seg-s">sees the money</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="rh-body">
+    <div class="rh-phone">
+      <div class="rh-screen" data-screen>
+        <div class="rh-status" aria-hidden="true">
+          <span class="rh-time">9:41</span>
+          <span class="rh-island"></span>
+          <span class="rh-sicons">
+            <svg viewBox="0 0 18 12" width="17" height="11"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg viewBox="0 0 16 12" width="15" height="11"><path d="M8 2.2c2.4 0 4.6.9 6.2 2.5l1.3-1.4A10.6 10.6 0 0 0 8 .3 10.6 10.6 0 0 0 .5 3.3l1.3 1.4A8.7 8.7 0 0 1 8 2.2Zm0 3.6c1.4 0 2.7.5 3.7 1.4l1.3-1.4A7.3 7.3 0 0 0 8 3.9a7.3 7.3 0 0 0-5 1.9l1.3 1.4c1-.9 2.3-1.4 3.7-1.4ZM8 9.3l1.9-2a2.8 2.8 0 0 0-3.8 0l1.9 2Z"/></svg>
+            <svg viewBox="0 0 27 12" width="25" height="11"><rect x=".5" y=".5" width="22" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".45"/><rect x="2.2" y="2.2" width="16" height="7.6" rx="1.8"/><rect x="24" y="4" width="2" height="4" rx="1" opacity=".45"/></svg>
+          </span>
+        </div>
+
+        <div class="rh-tg">
+          <button type="button" class="rh-tg-close" data-act="close" aria-label="Close the mini app (restarts the demo)">
+            <svg viewBox="0 0 14 14" width="13" height="13" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            <span>Close</span>
+          </button>
+          <div class="rh-tg-title"><strong>Rahat Bakery</strong><span>mini app</span></div>
+          <button type="button" class="rh-tg-more" data-act="more" aria-label="About this demo" aria-expanded="false">
+            <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="10" r="1.3"/><circle cx="10" cy="10" r="1.3"/><circle cx="14" cy="10" r="1.3"/></svg>
+          </button>
+        </div>
+
+        <div class="rh-head">
+          <span class="rh-logo" data-logo set:html={logo}></span>
+          <div class="rh-brand"><strong>Rahat Bakery</strong><span>Mini App</span></div>
+          <span class="rh-pill" data-pill><i></i>Today 00:00 – 23:59</span>
+        </div>
+
+        <div class="rh-view" data-view tabindex="-1" aria-label="Mini app screen"></div>
+
+        <nav class="rh-nav" data-nav aria-label="Mini app navigation"></nav>
+
+        <div class="rh-note" data-note aria-hidden="true"></div>
+
+        <div class="rh-pop" data-pop hidden>
+          <p><strong>About this phone</strong></p>
+          <p>A working replica of Rahat Go built for this page. Dishes, photos and prices are the bakery's real menu; ingredient costs and today's orders are illustrative.</p>
+          <button type="button" class="rh-ghost" data-act="close">Restart the demo</button>
+        </div>
+
+        <div class="rh-splash" data-splash aria-hidden="true">
+          <span class="rh-splash-logo" set:html={logo}></span>
+          <strong>Rahat Bakery</strong>
+        </div>
+      </div>
+    </div>
+
+    <aside class="rh-side">
+      <p class="rh-side-h">Try the loop <span data-progress>0/4</span></p>
+      <ol class="rh-steps" data-steps>
+        <li><button type="button" data-goto="customer" data-step="added"><i></i><span><b>Add two dishes</b> as a customer</span></button></li>
+        <li><button type="button" data-goto="customer" data-step="placed"><i></i><span><b>Place the order</b> (pickup or delivery)</span></button></li>
+        <li><button type="button" data-goto="staff" data-step="completed"><i></i><span><b>Take it to Completed</b> as staff</span></button></li>
+        <li><button type="button" data-goto="owner" data-step="played"><i></i><span><b>Try a new price</b> for a dish as owner</span></button></li>
+      </ol>
+      <button type="button" class="rh-watch" data-act="video">
+        <span class="rh-watch-ic" aria-hidden="true"><svg viewBox="0 0 12 14" width="11" height="12"><path d="M1 1.2v11.6c0 .6.7 1 1.2.7l9.3-5.8c.5-.3.5-1 0-1.3L2.2.5C1.7.2 1 .6 1 1.2Z" fill="currentColor"/></svg></span>
+        Watch the real app <span class="rh-watch-d">80 s</span>
+      </button>
+      <p class="rh-fine">Real menu and prices. Ingredient costs and today's orders are illustrative.</p>
+    </aside>
+  </div>
+
+  <p class="rh-sr" data-live aria-live="polite"></p>
+
+  <dialog class="rh-dlg" data-dlg aria-label="Rahat Go demo video">
+    <div class="rh-dlg-in">
+      <div class="rh-dlg-top">
+        <p><strong>Rahat Go</strong> · the real app, recorded</p>
+        <button type="button" class="rh-dlg-x" data-dlg-close aria-label="Close video">
+          <svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <video controls preload="none" playsinline poster="/media/rahat-go-demo-poster.webp" width="1920" height="1080">
+        <source src="/media/rahat-go-demo.mp4" type="video/mp4" />
+      </video>
+    </div>
+  </dialog>
+</div>
+
+<script>
+  import menu from "../../data/rahat-menu.json";
+
+  interface Ing { name: string; unit: string; qty: number; costPerUnit: number }
+  interface Dish { id: number; name: string; price: number; category: string; ingredients: Ing[]; cost: number }
+  type Mode = "pickup" | "delivery";
+  type Role = "customer" | "staff" | "owner";
+  interface Order { code: string; user: string; mode: Mode; items: [number, number][]; at: number; status: number; mine: boolean }
+
+  const DISHES = menu as Dish[];
+  const BY_ID = new Map(DISHES.map((d) => [d.id, d]));
+  const ROLES: Role[] = ["customer", "staff", "owner"];
+  const FEE = 15000;
+  const ADDRESS = "An Thuong 4, My An · 3.4 km by road";
+  const CATS = ["All", ...Array.from(new Set(DISHES.map((d) => d.category)))];
+  const PALETTE = ["#e8962a", "#2a9d8f", "#8c5cd6", "#e76f51", "#3a86c8", "#e9c46a", "#5b8c3a", "#c2577f", "#8a6d4e"];
+  // Dishes sold earlier today (illustrative), across 16 completed orders.
+  const EARLIER: Record<number, number> = { 13: 7, 14: 5, 9: 2, 22: 6, 24: 3, 21: 4, 1: 3, 7: 2, 11: 2, 46: 3, 51: 2, 56: 4 };
+  const EARLIER_ORDERS = 16;
+
+  const fmt = (n: number) => `${Math.round(n).toLocaleString("en-US")} ₫`;
+  const pct = (m: number) => `${Math.round(m * 100)}%`;
+  const dish = (id: number) => BY_ID.get(id)!;
+  const img = (id: number) => `/rahat/dishes/${id}.webp`;
+  const sub = (items: [number, number][]) => items.reduce((s, [id, q]) => s + dish(id).price * q, 0);
+  const qtyOf = (items: [number, number][]) => items.reduce((s, [, q]) => s + q, 0);
+  const tone = (m: number) => (m < 0 ? "neg" : m < 0.4 ? "low" : m < 0.6 ? "mid" : "good");
+  const num = (q: number) => (Number.isInteger(q) ? String(q) : q.toFixed(1));
+  const stages = (m: Mode) => ["New", "Preparing", m === "pickup" ? "Ready for pickup" : "Out for delivery", "Completed"];
+  const actions = (m: Mode) => ["Start preparing", m === "pickup" ? "Mark ready for pickup" : "Hand to courier", "Complete order"];
+  const messages = (o: Order) => [
+    `we got your order ${o.code}, staff are checking it.`,
+    `good news, ${o.code} is being prepared right now.`,
+    o.mode === "pickup" ? `${o.code} is ready. Come and pick it up at the bakery.` : `the courier is on the way with ${o.code}.`,
+    `${o.code} is completed. Thank you, enjoy your meal!`,
+  ];
+  const ago = (t: number) => {
+    const m = Math.floor((Date.now() - t) / 60000);
+    return m < 1 ? "just now" : `${m}m ago`;
+  };
+  const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+
+  const I = {
+    plus: `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M8 2.5v11M2.5 8h11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`,
+    minus: `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M2.5 8h11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`,
+    back: `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M16 10H4m5-5-5 5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    store: `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9.5 5.4 4h13.2L20 9.5M4 9.5h16M4 9.5c0 1.4 1.1 2.5 2.7 2.5S9.3 10.9 9.3 9.5c0 1.4 1.2 2.5 2.7 2.5s2.7-1.1 2.7-2.5c0 1.4 1.1 2.5 2.6 2.5S20 10.9 20 9.5M5.5 12v8h13v-8M10 20v-4.5h4V20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
+    truck: `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M2.5 6h11v10h-11zM13.5 9.5h4l3 3.2V16h-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="6.5" cy="17" r="1.9" fill="var(--rh-card)" stroke="currentColor" stroke-width="1.6"/><circle cx="17" cy="17" r="1.9" fill="var(--rh-card)" stroke="currentColor" stroke-width="1.6"/></svg>`,
+    pin: `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M8 15s5-4.6 5-8.5A5 5 0 0 0 3 6.5C3 10.4 8 15 8 15Z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="6.5" r="1.8" fill="currentColor"/></svg>`,
+    card: `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><rect x="1.5" y="3.5" width="13" height="9" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M1.5 6.5h13" stroke="currentColor" stroke-width="1.5"/></svg>`,
+    qr: `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M2 2h4.5v4.5H2zM9.5 2H14v4.5H9.5zM2 9.5h4.5V14H2z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9.5 9.5h2v2h-2zM12 12h2v2h-2zM12 9.5h2v1.5h-2zM9.5 12.5h1.5V14H9.5z" fill="currentColor"/></svg>`,
+    check: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="m3.2 8.4 3 3 6.6-6.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    chev: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    menu: `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4.5 15.5c-1.3-3.8 1-8.6 7.5-9.5 6.5.9 8.8 5.7 7.5 9.5-2.4-.9-4.9-1.3-7.5-1.3s-5.1.4-7.5 1.3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 8.2 10 14M15 8.2 14 14M12 6.5V14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+    cart: `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M3 4.5h2.4l2.1 10.2h10.2l2-7.2H6.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.3" cy="19" r="1.5" fill="currentColor"/><circle cx="16.4" cy="19" r="1.5" fill="currentColor"/></svg>`,
+    user: `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8.2" r="3.7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4.8 20c.8-3.7 3.6-5.8 7.2-5.8s6.4 2.1 7.2 5.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+    send: `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M14.5 1.5 1.5 7l5 2 2 5 6-12.5ZM6.5 9l3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+  };
+
+  function seedOrders(): Order[] {
+    const now = Date.now();
+    const o = (code: string, user: string, mode: Mode, items: [number, number][], mins: number, status: number): Order =>
+      ({ code, user, mode, items, at: now - mins * 60000, status, mine: false });
+    return [
+      o("D-0420", "@thu.mai", "delivery", [[11, 2], [56, 1]], 4, 0),
+      o("P-0419", "@alex17", "pickup", [[1, 1], [7, 1]], 9, 0),
+      o("D-0418", "@sofia_dn", "delivery", [[9, 1], [56, 2]], 18, 1),
+      o("P-0417", "@linh.ng", "pickup", [[22, 2], [51, 1]], 26, 2),
+    ];
+  }
+
+  function init(root: HTMLElement) {
+    const q = <T extends Element = HTMLElement>(s: string) => root.querySelector(s) as T;
+    const view = q("[data-view]");
+    const nav = q("[data-nav]");
+    const pill = q("[data-pill]");
+    const note = q("[data-note]");
+    const live = q("[data-live]");
+    const pop = q("[data-pop]");
+    const splash = q("[data-splash]");
+    const more = q("[data-act=more]");
+    const logoSvg = q("[data-logo]").innerHTML;
+    const dlg = q<HTMLDialogElement>("[data-dlg]");
+    const video = dlg.querySelector("video")!;
+    const segBtns = Array.from(root.querySelectorAll<HTMLButtonElement>(".rh-seg-btn"));
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    const fresh = () => ({
+      role: "customer" as Role,
+      cat: "All",
+      cart: new Map<number, number>(),
+      mode: "pickup" as Mode,
+      orders: seedOrders(),
+      seq: 421,
+      lastCode: "",
+      justPlaced: false,
+      screen: { customer: "menu", staff: "list", owner: "list" } as Record<Role, string>,
+      play: new Map<number, number>(),
+      dots: { staff: false, owner: false },
+      done: { added: false, placed: false, completed: false, played: false } as Record<string, boolean>,
+    });
+    let S = fresh();
+    let lastKey = "";
+    let noteTimer = 0;
+
+    const cartItems = (): [number, number][] => Array.from(S.cart.entries()).filter(([, n]) => n > 0);
+    const cartCount = () => qtyOf(cartItems());
+    const say = (t: string) => { live.textContent = ""; requestAnimationFrame(() => (live.textContent = t)); };
+
+    /* ---------- page builders ---------- */
+    function stepper(id: number, small = false) {
+      const n = S.cart.get(id) || 0;
+      const d = dish(id);
+      if (!n) return `<button type="button" class="rh-plus" data-act="inc" data-id="${id}" data-key="inc-${id}" aria-label="Add ${d.name} to cart">${I.plus}</button>`;
+      return `<div class="rh-stepper${small ? " sm" : ""}">
+        <button type="button" data-act="dec" data-id="${id}" data-key="dec-${id}" aria-label="Remove one ${d.name}">${I.minus}</button>
+        <span aria-label="${n} in cart">${n}</span>
+        <button type="button" data-act="inc" data-id="${id}" data-key="inc-${id}" aria-label="Add one more ${d.name}">${I.plus}</button>
+      </div>`;
+    }
+    function cartBar() {
+      const n = cartCount();
+      if (!n) return "";
+      return `<button type="button" class="rh-cartbar" data-act="go" data-v="checkout" data-key="cartbar">
+        <span class="rh-cb-n">${n}</span><span class="rh-cb-l">${n === 1 ? "item" : "items"} in cart</span>
+        <strong>${fmt(sub(cartItems()))}</strong><span class="rh-cb-go">Checkout ${I.chev}</span></button>`;
+    }
+    function menuPage() {
+      const list = DISHES.filter((d) => S.cat === "All" || d.category === S.cat);
+      return `
+        <section class="rh-hero">
+          <div><p class="rh-hero-t">Freshly baked every day</p><p class="rh-hero-s">Tatar &amp; Russian home baking, Da Nang</p></div>
+          <span class="rh-hero-sun" aria-hidden="true">${logoSvg}</span>
+        </section>
+        <h3 class="rh-h" tabindex="-1" data-autofocus>Menu</h3>
+        <div class="rh-chips" role="group" aria-label="Filter by category">
+          ${CATS.map((c) => `<button type="button" class="rh-chip" data-act="cat" data-v="${c}" data-key="cat-${c}" aria-pressed="${c === S.cat}">${c}</button>`).join("")}
+        </div>
+        <div class="rh-grid">
+          ${list.map((d) => `<article class="rh-card">
+            <div class="rh-photo"><img src="${img(d.id)}" alt="" width="480" height="480" loading="lazy" decoding="async"></div>
+            <h4>${d.name}</h4>
+            <p class="rh-price">${fmt(d.price)}</p>
+            <div class="rh-ctl" data-ctl="${d.id}">${stepper(d.id)}</div>
+          </article>`).join("")}
+        </div>
+        <div class="rh-cartslot" data-cartbar>${cartBar()}</div>`;
+    }
+    function checkoutPage() {
+      const items = cartItems();
+      const head = `<div class="rh-bar"><button type="button" class="rh-back" data-act="go" data-v="menu" data-key="back" aria-label="Back to menu">${I.back}</button><h3 class="rh-h" tabindex="-1" data-autofocus>Checkout</h3></div>`;
+      if (!items.length) {
+        return `${head}<div class="rh-empty"><span class="rh-empty-ic">${I.cart}</span><p><strong>Your cart is empty</strong></p><p>Add something warm from the menu first.</p>
+          <button type="button" class="rh-cta" data-act="go" data-v="menu" data-key="tomenu">Browse the menu</button></div>`;
+      }
+      const s = sub(items);
+      const fee = S.mode === "delivery" ? FEE : 0;
+      const modeBtn = (m: Mode, ic: string, t: string, d: string) =>
+        `<button type="button" class="rh-mode" data-act="mode" data-v="${m}" data-key="mode-${m}" aria-pressed="${S.mode === m}">${ic}<b>${t}</b><span>${d}</span></button>`;
+      return `${head}
+        <p class="rh-label">How would you like to receive it?</p>
+        <div class="rh-modes">
+          ${modeBtn("pickup", I.store, "Pickup", "At the bakery · free")}
+          ${modeBtn("delivery", I.truck, "Delivery", "Courier · by road distance")}
+        </div>
+        <div class="rh-info">
+          ${S.mode === "delivery"
+            ? `<p>${I.pin}<span>${ADDRESS}<em>Fee by road distance: ${fmt(FEE)}</em></span></p><p>${I.qr}<span>Pay by bank QR once staff confirm the order</span></p>`
+            : `<p>${I.store.replace('width="22" height="22"', 'width="15" height="15"')}<span>Rahat Bakery, Son Tra · ready in about 20 min</span></p><p>${I.card}<span>Pay at the bakery when you collect your order</span></p>`}
+        </div>
+        <p class="rh-label">Your order</p>
+        <ul class="rh-lines">
+          ${items.map(([id, n]) => { const d = dish(id); return `<li>
+            <img src="${img(id)}" alt="" width="44" height="44">
+            <div><b>${d.name}</b><span>${fmt(d.price)}</span></div>
+            ${stepper(id, true)}
+            <strong>${fmt(d.price * n)}</strong></li>`; }).join("")}
+        </ul>
+        <dl class="rh-sum">
+          <div><dt>Subtotal</dt><dd>${fmt(s)}</dd></div>
+          <div><dt>Delivery</dt><dd>${S.mode === "delivery" ? fmt(FEE) : "Pickup · 0 ₫"}</dd></div>
+          <div class="rh-total"><dt>Total</dt><dd>${fmt(s + fee)}</dd></div>
+        </dl>
+        <button type="button" class="rh-cta" data-act="place" data-key="place">Place order · ${fmt(s + fee)}</button>`;
+    }
+    function tracker(o: Order) {
+      const st = stages(o.mode);
+      return `<ol class="rh-track">${st.map((t, i) =>
+        `<li class="${i < o.status || o.status === 3 ? "done" : i === o.status ? "now" : ""}"><i>${i < o.status || o.status === 3 ? I.check : ""}</i><span>${t}</span></li>`).join("")}</ol>`;
+    }
+    function trackPage() {
+      const mine = S.orders.filter((o) => o.mine);
+      const o = mine.find((x) => x.code === S.lastCode) || mine[0];
+      if (!o) {
+        return `<h3 class="rh-h" tabindex="-1" data-autofocus>My orders</h3>
+          <div class="rh-empty"><span class="rh-empty-ic">${I.user}</span><p><strong>No orders yet</strong></p><p>Your orders and their live status show up here.</p>
+          <button type="button" class="rh-cta" data-act="go" data-v="menu" data-key="tomenu">Browse the menu</button></div>`;
+      }
+      const s = sub(o.items);
+      const fee = o.mode === "delivery" ? FEE : 0;
+      const anim = S.justPlaced ? " pop" : "";
+      const others = mine.filter((x) => x !== o);
+      return `
+        <div class="rh-ok${anim}">
+          <span class="rh-ok-ic"><svg viewBox="0 0 52 52" width="52" height="52" aria-hidden="true"><circle cx="26" cy="26" r="24" fill="currentColor" opacity=".14"/><circle cx="26" cy="26" r="17" fill="currentColor"/><path d="m18.5 26.5 5 5 10-11" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <p class="rh-ok-k">${o.status === 3 ? "Order completed" : "Order placed"}</p>
+          <h3 class="rh-h rh-code" tabindex="-1" data-autofocus>${o.code}</h3>
+          <p class="rh-ok-s">${o.mode === "pickup" ? "Pickup at the bakery" : "Delivery · " + ADDRESS.split(" · ")[0]} · ${plural(qtyOf(o.items), "item")}</p>
+        </div>
+        <div class="rh-panel">
+          <p class="rh-label">Live status</p>
+          ${tracker(o)}
+          <p class="rh-mini">Each step arrives as a Telegram message from the bakery bot.</p>
+        </div>
+        <div class="rh-panel">
+          ${o.items.map(([id, n]) => `<p class="rh-row"><span>${dish(id).name} <em>×${n}</em></span><span>${fmt(dish(id).price * n)}</span></p>`).join("")}
+          ${fee ? `<p class="rh-row muted"><span>Delivery</span><span>${fmt(fee)}</span></p>` : ""}
+          <p class="rh-row rh-row-t"><span>Total</span><span>${fmt(s + fee)}</span></p>
+        </div>
+        ${o.status < 3 ? `<button type="button" class="rh-cta" data-act="role" data-v="staff" data-key="tostaff">Now process it as staff ${I.chev}</button>` : `<button type="button" class="rh-cta" data-act="role" data-v="owner" data-key="toowner">See it in the owner's numbers ${I.chev}</button>`}
+        <button type="button" class="rh-ghost" data-act="go" data-v="menu" data-key="again">Order something else</button>
+        ${others.length ? `<p class="rh-label">Earlier</p>${others.map((x) => `<p class="rh-row muted"><span>${x.code}</span><span>${stages(x.mode)[x.status]}</span></p>`).join("")}` : ""}`;
+    }
+
+    function statusChip(o: Order) {
+      return `<span class="rh-st st${o.status}">${stages(o.mode)[o.status]}</span>`;
+    }
+    function orderCard(o: Order) {
+      const n = qtyOf(o.items);
+      return `<button type="button" class="rh-oc${o.mine ? " mine" : ""}${o.status === 3 ? " done" : ""}" data-act="open" data-v="${o.code}" data-key="oc-${o.code}">
+        <span class="rh-oc-top">${statusChip(o)}${o.mine ? `<span class="rh-newtag">${o.status === 0 ? "New · " : "Your order · "}${ago(o.at)}</span>` : `<span class="rh-ago">${ago(o.at)}</span>`}</span>
+        <span class="rh-oc-mid"><b>${o.code}</b><span class="rh-oc-u">${o.mode === "pickup" ? I.store : I.truck}${o.user}</span><span class="rh-oc-n">${plural(n, "item")}</span></span>
+        <span class="rh-oc-sum">${fmt(sub(o.items) + (o.mode === "delivery" ? FEE : 0))}</span>
+      </button>`;
+    }
+    function staffList() {
+      const active = S.orders.filter((o) => o.status < 3).sort((a, b) => Number(b.mine) - Number(a.mine) || b.at - a.at);
+      const done = S.orders.filter((o) => o.status === 3).sort((a, b) => b.at - a.at);
+      const hasMine = S.orders.some((o) => o.mine);
+      return `<div class="rh-bar"><h3 class="rh-h" tabindex="-1" data-autofocus>Orders</h3><span class="rh-tag">Staff</span></div>
+        ${hasMine ? "" : `<div class="rh-hint"><p>Place an order as a customer to see it arrive here.</p><button type="button" class="rh-linkbtn" data-act="role" data-v="customer" data-key="hint">Go to the menu ${I.chev}</button></div>`}
+        <p class="rh-label">Active <span class="rh-count">${active.length}</span></p>
+        <div class="rh-olist">${active.map(orderCard).join("") || `<p class="rh-mini">Queue is clear. Nice.</p>`}</div>
+        ${done.length ? `<p class="rh-label">Completed today <span class="rh-count">${done.length}</span></p><div class="rh-olist">${done.map(orderCard).join("")}</div>` : ""}`;
+    }
+    function staffOrder(code: string) {
+      const o = S.orders.find((x) => x.code === code);
+      if (!o) return staffList();
+      const s = sub(o.items);
+      const fee = o.mode === "delivery" ? FEE : 0;
+      const st = stages(o.mode);
+      return `<div class="rh-bar"><button type="button" class="rh-back" data-act="go" data-v="list" data-key="back" aria-label="Back to orders">${I.back}</button><h3 class="rh-h" tabindex="-1" data-autofocus>${o.code}</h3>${statusChip(o)}</div>
+        <div class="rh-panel rh-od">
+          <p class="rh-row"><span class="rh-oc-u">${o.mode === "pickup" ? I.store : I.truck}${o.mode === "pickup" ? "Pickup" : "Delivery"} · ${o.user}</span><span class="rh-ago">${o.mine && o.status === 0 ? "NEW · " : ""}${ago(o.at)}</span></p>
+          ${o.mode === "delivery" ? `<p class="rh-row muted"><span class="rh-oc-u">${I.pin}${o.mine ? ADDRESS : "Address shared in chat"}</span></p>` : ""}
+        </div>
+        <div class="rh-prog" role="img" aria-label="Status: ${st[o.status]}">
+          ${st.map((t, i) => `<span class="${i <= o.status ? "on" : ""}${i === o.status ? " cur" : ""}"><i></i><em>${t}</em></span>`).join("")}
+        </div>
+        <div class="rh-panel">
+          <p class="rh-label">Items</p>
+          ${o.items.map(([id, n]) => `<p class="rh-row"><span>${dish(id).name}</span><span><em>×${n}</em> ${fmt(dish(id).price * n)}</span></p>`).join("")}
+          <p class="rh-row muted rh-sep"><span>Subtotal</span><span>${fmt(s)}</span></p>
+          <p class="rh-row muted"><span>Delivery</span><span>${fee ? fmt(fee) : "Pickup · 0 ₫"}</span></p>
+          <p class="rh-row rh-row-t"><span>Total</span><span>${fmt(s + fee)}</span></p>
+        </div>
+        ${o.status < 3
+          ? `<button type="button" class="rh-cta" data-act="advance" data-v="${o.code}" data-key="advance">${actions(o.mode)[o.status]}</button>`
+          : `<p class="rh-donemsg">${I.check} Completed. The customer has been told.</p><button type="button" class="rh-cta" data-act="go" data-v="list" data-key="back2">Back to orders</button>`}
+        <button type="button" class="rh-ghost" data-act="msg" data-v="${o.code}" data-key="msg">${I.send} Message customer</button>`;
+    }
+
+    function stats() {
+      const sold: Record<number, number> = { ...EARLIER };
+      for (const o of S.orders) for (const [id, n] of o.items) sold[id] = (sold[id] || 0) + n;
+      let revenue = 0, profit = 0;
+      for (const d of DISHES) { const n = sold[d.id] || 0; revenue += n * d.price; profit += n * (d.price - d.cost); }
+      const orders = EARLIER_ORDERS + S.orders.length;
+      return { sold, revenue, profit, orders, avg: revenue / orders };
+    }
+    function ownerList() {
+      const t = stats();
+      const mine = S.orders.filter((o) => o.mine);
+      const mineRev = mine.reduce((s, o) => s + sub(o.items), 0);
+      const mineProfit = mine.reduce((s, o) => s + o.items.reduce((a, [id, n]) => a + n * (dish(id).price - dish(id).cost), 0), 0);
+      const kpi = (k: string, v: string, s: string, hot: boolean) => `<div class="rh-kpi${hot ? " hot" : ""}"><span>${k}</span><b>${v}</b><em>${s}</em></div>`;
+      return `<div class="rh-bar"><h3 class="rh-h" tabindex="-1" data-autofocus>Today</h3><span class="rh-tag">Owner</span><span class="rh-illu">illustrative data</span></div>
+        <div class="rh-kpis">
+          ${kpi("Revenue", fmt(t.revenue), "food sales", mine.length > 0)}
+          ${kpi("Orders", String(t.orders), `${S.orders.filter((o) => o.status < 3).length} still active`, mine.length > 0)}
+          ${kpi("Average order", fmt(Math.round(t.avg / 1000) * 1000), "per order", mine.length > 0)}
+          ${kpi("Gross profit", fmt(t.profit), `${pct(t.profit / t.revenue)} margin`, mine.length > 0)}
+        </div>
+        ${mine.length
+          ? `<p class="rh-yours">${I.check}<span>Includes your ${mine.length > 1 ? "orders" : "order " + mine[0].code}: <b>+${fmt(mineRev)}</b> revenue, <b>+${fmt(mineProfit)}</b> profit. Orders count as soon as they are placed.</span></p>`
+          : `<p class="rh-yours idle"><span>Orders count as soon as they are placed. Place one as a customer and watch these move.</span></p>`}
+        <p class="rh-label">What every dish earns <span class="rh-label-r">tap a dish</span></p>
+        <div class="rh-dlist">
+          ${DISHES.map((d) => { const m = (d.price - d.cost) / d.price; return `<button type="button" class="rh-drow" data-act="dish" data-v="${d.id}" data-key="d-${d.id}">
+            <img src="${img(d.id)}" alt="" width="40" height="40" loading="lazy">
+            <span class="rh-drow-m"><b>${d.name}</b><span>${fmt(d.price)} · cost ${fmt(d.cost)}</span></span>
+            <span class="rh-drow-r"><span class="rh-badge ${tone(m)}">${pct(m)}</span><em>${t.sold[d.id] || 0} sold</em></span>
+          </button>`; }).join("")}
+        </div>
+        <p class="rh-mini center">Prices are the real menu. Ingredient costs are illustrative.</p>`;
+    }
+    function donut(d: Dish) {
+      const lines = d.ingredients.map((g) => ({ ...g, c: g.qty * g.costPerUnit })).sort((a, b) => b.c - a.c);
+      const total = lines.reduce((s, l) => s + l.c, 0);
+      const R = 54, C = 2 * Math.PI * R;
+      let off = 0;
+      const segs = lines.map((l, i) => {
+        const len = (l.c / total) * C;
+        const gap = Math.min(2, len * 0.3);
+        const s = `<circle r="${R}" cx="70" cy="70" fill="none" stroke="${PALETTE[i % PALETTE.length]}" stroke-width="20" stroke-dasharray="${(len - gap).toFixed(2)} ${(C - len + gap).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}"><title>${l.name}: ${fmt(l.c)}</title></circle>`;
+        off += len;
+        return s;
+      }).join("");
+      return { lines, total, svg: `<svg class="rh-donut" viewBox="0 0 140 140" role="img" aria-label="Ingredient cost split for ${d.name}"><g transform="rotate(-90 70 70)">${segs}</g><text x="70" y="64" text-anchor="middle" class="rh-dn-k">Total cost</text><text x="70" y="82" text-anchor="middle" class="rh-dn-v">${fmt(total)}</text></svg>` };
+    }
+    function ownerDish(id: number) {
+      const d = BY_ID.get(id);
+      if (!d) return ownerList();
+      const p = S.play.get(id) ?? d.price;
+      const min = Math.max(1000, Math.round((d.price * 0.4) / 1000) * 1000);
+      const max = d.price * 2;
+      const dn = donut(d);
+      return `<div class="rh-bar"><button type="button" class="rh-back" data-act="go" data-v="list" data-key="back" aria-label="Back to all dishes">${I.back}</button><h3 class="rh-h" tabindex="-1" data-autofocus>${d.name}</h3></div>
+        <div class="rh-dhead"><img src="${img(d.id)}" alt="" width="64" height="64"><p>${d.category} · menu price ${fmt(d.price)}<span class="rh-illu">illustrative costs</span></p></div>
+        <div class="rh-tiles">
+          <div><b data-pg="price">${fmt(p)}</b><span>Price</span></div>
+          <div><b>${fmt(d.cost)}</b><span>Cost</span></div>
+          <div><b data-pg="profit">${fmt(p - d.cost)}</b><span>Profit</span></div>
+          <div><b data-pg="margin">${pct((p - d.cost) / p)}</b><span>Margin</span></div>
+        </div>
+        <section class="rh-play" aria-label="Price playground">
+          <div class="rh-play-h"><p class="rh-label">Price playground</p><button type="button" class="rh-linkbtn" data-act="reset-price" data-v="${id}" data-key="reset">Reset</button></div>
+          <div class="rh-play-p"><output data-pg="out">${fmt(p)}</output><span class="rh-badge ${tone((p - d.cost) / p)}" data-pg="badge">${pct((p - d.cost) / p)} margin</span></div>
+          <input type="range" class="rh-range" data-act="price" data-id="${id}" data-key="range" min="${min}" max="${max}" step="1000" value="${p}" aria-label="Selling price for ${d.name}" aria-valuetext="${fmt(p)}">
+          <div class="rh-range-l"><span>${fmt(min)}</span><span>${fmt(max)}</span></div>
+          <div class="rh-split" aria-hidden="true"><i class="c" data-pg="barc"></i><i class="p" data-pg="barp"></i></div>
+          <p class="rh-split-l"><span><i class="c"></i>Cost ${fmt(d.cost)}</span><span><i class="p"></i><span data-pg="profit2">Profit ${fmt(p - d.cost)}</span></span></p>
+          <p class="rh-mini" data-pg="delta"></p>
+        </section>
+        <div class="rh-panel rh-cost">
+          <p class="rh-label">Where the cost goes</p>
+          <div class="rh-cost-in">${dn.svg}
+            <ul class="rh-legend">${dn.lines.slice(0, 5).map((l, i) => `<li><i style="background:${PALETTE[i]}"></i><span>${l.name}</span><b>${pct(l.c / dn.total)}</b></li>`).join("")}${dn.lines.length > 5 ? `<li class="muted"><i style="background:#cdbfae"></i><span>+${dn.lines.length - 5} more</span><b>${pct(dn.lines.slice(5).reduce((s, l) => s + l.c, 0) / dn.total)}</b></li>` : ""}</ul>
+          </div>
+          <table class="rh-ing">
+            <thead><tr><th scope="col">Ingredient</th><th scope="col">Qty × cost/unit</th><th scope="col">Line</th></tr></thead>
+            <tbody>${dn.lines.map((l, i) => `<tr><td><i style="background:${PALETTE[i % PALETTE.length]}"></i>${l.name}</td><td>${num(l.qty)} ${l.unit} × ${l.costPerUnit.toLocaleString("en-US")}</td><td>${fmt(l.c)}</td></tr>`).join("")}</tbody>
+            <tfoot><tr><td colspan="2">Cost per portion</td><td>${fmt(d.cost)}</td></tr></tfoot>
+          </table>
+        </div>`;
+    }
+
+    function page() {
+      const sc = S.screen[S.role];
+      if (S.role === "customer") return sc === "checkout" ? checkoutPage() : sc === "track" ? trackPage() : menuPage();
+      if (S.role === "staff") return sc.startsWith("order:") ? staffOrder(sc.slice(6)) : staffList();
+      return sc.startsWith("dish:") ? ownerDish(Number(sc.slice(5))) : ownerList();
+    }
+    const depth = (sc: string) => (sc === "menu" || sc === "list" ? 0 : sc === "checkout" || sc.includes(":") ? 1 : 2);
+
+    /* ---------- rendering ---------- */
+    function renderChrome() {
+      const sc = S.screen[S.role];
+      const n = cartCount();
+      const tab = S.role !== "customer" ? "profile" : sc === "checkout" ? "cart" : sc === "track" ? "profile" : "menu";
+      nav.innerHTML = `
+        <button type="button" class="rh-nb${tab === "menu" ? " on" : ""}" data-act="nav" data-v="menu" ${tab === "menu" ? 'aria-current="page"' : ""}>${I.menu}<span>Menu</span></button>
+        <button type="button" class="rh-nb rh-nb-cart${tab === "cart" ? " on" : ""}" data-act="nav" data-v="cart" ${tab === "cart" ? 'aria-current="page"' : ""} aria-label="Cart, ${plural(n, "item")}"><span class="rh-nb-ball">${I.cart}${n ? `<i class="rh-nb-badge">${n}</i>` : ""}</span><span>Cart</span></button>
+        <button type="button" class="rh-nb${tab === "profile" ? " on" : ""}" data-act="nav" data-v="profile" ${tab === "profile" ? 'aria-current="page"' : ""}>${I.user}<span>Profile</span></button>`;
+      if (S.role === "customer") pill.innerHTML = `<i></i>Today 00:00 – 23:59`;
+      else if (S.role === "staff") pill.innerHTML = `<i></i>${S.orders.filter((o) => o.status < 3).length} active orders`;
+      else pill.innerHTML = `<i></i>Open · owner view`;
+      pill.dataset.role = S.role;
+      segBtns.forEach((b, i) => {
+        const on = b.dataset.role === S.role;
+        b.setAttribute("aria-pressed", String(on));
+        if (on) root.style.setProperty("--rh-seg-i", String(i));
+      });
+      (["staff", "owner"] as const).forEach((r) => { q(`[data-dot=${r}]`).hidden = !S.dots[r]; });
+      const steps = Object.values(S.done).filter(Boolean).length;
+      q("[data-progress]").textContent = `${steps}/4`;
+      root.querySelectorAll<HTMLButtonElement>("[data-step]").forEach((b) => b.classList.toggle("ok", !!S.done[b.dataset.step!]));
+    }
+
+    function render(anim: "" | "fwd" | "back" | "left" | "right" | "up" = "", focusNew = false) {
+      const key = `${S.role}:${S.screen[S.role]}`;
+      const same = key === lastKey && !anim;
+      const top = same ? view.scrollTop : 0;
+      const act = document.activeElement as HTMLElement | null;
+      const fk = act && view.contains(act) ? act.dataset.key : undefined;
+      view.innerHTML = `<div class="rh-pg${anim && !reduce.matches ? " in-" + anim : ""}">${page()}</div>`;
+      view.scrollTop = top;
+      lastKey = key;
+      if (S.role === "owner" && S.screen.owner.startsWith("dish:")) updatePlay(Number(S.screen.owner.slice(5)), false);
+      if (fk && same) view.querySelector<HTMLElement>(`[data-key="${CSS.escape(fk)}"]`)?.focus({ preventScroll: true });
+      else if (focusNew) view.querySelector<HTMLElement>("[data-autofocus]")?.focus({ preventScroll: true });
+      renderChrome();
+    }
+
+    function go(sc: string, focusNew = true) {
+      const prev = S.screen[S.role];
+      if (prev === sc) { view.scrollTo({ top: 0, behavior: reduce.matches ? "auto" : "smooth" }); return; }
+      S.screen[S.role] = sc;
+      if (sc !== "track") S.justPlaced = false;
+      render(depth(sc) >= depth(prev) ? "fwd" : "back", focusNew);
+    }
+
+    function setRole(r: Role, focusNew = false) {
+      if (r === S.role) return;
+      const dir = ROLES.indexOf(r) > ROLES.indexOf(S.role) ? "right" : "left";
+      S.role = r;
+      if (r !== "customer") S.dots[r] = false;
+      S.justPlaced = false;
+      hideNote();
+      closePop();
+      render(dir, focusNew);
+      say(r === "customer" ? "Customer view: the menu." : r === "staff" ? "Staff view: the order queue." : "Owner view: today's numbers.");
+    }
+
+    /* ---------- cart patching (no full re-render, keeps photos steady) ---------- */
+    function patchCart(id: number) {
+      const ctl = view.querySelector<HTMLElement>(`[data-ctl="${id}"]`);
+      if (!ctl) { render(); return; }
+      const act = document.activeElement as HTMLElement | null;
+      const fk = act && ctl.contains(act) ? act.dataset.key : undefined;
+      ctl.innerHTML = stepper(id);
+      if (fk) (ctl.querySelector<HTMLElement>(`[data-key="${fk}"]`) || ctl.querySelector<HTMLElement>("button"))?.focus({ preventScroll: true });
+      const bar = view.querySelector<HTMLElement>("[data-cartbar]")!;
+      const had = !!bar.firstElementChild;
+      bar.innerHTML = cartBar();
+      if (!had && bar.firstElementChild && !reduce.matches) bar.firstElementChild.classList.add("enter");
+      else if (bar.firstElementChild && !reduce.matches) { const el = bar.firstElementChild as HTMLElement; el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+      renderChrome();
+    }
+    function changeQty(id: number, delta: number) {
+      const n = Math.max(0, (S.cart.get(id) || 0) + delta);
+      if (n) S.cart.set(id, n); else S.cart.delete(id);
+      if (cartCount() >= 2) S.done.added = true;
+      const d = dish(id);
+      say(delta > 0 ? `${d.name} added. Cart: ${plural(cartCount(), "item")}, ${fmt(sub(cartItems()))}.` : `Removed one ${d.name}. Cart: ${plural(cartCount(), "item")}.`);
+      if (S.role === "customer" && S.screen.customer === "menu") patchCart(id); else render();
+    }
+
+    /* ---------- notifications (Telegram-style banner inside the phone) ---------- */
+    function hideNote() { note.classList.remove("show"); window.clearTimeout(noteTimer); }
+    function notify(text: string, meta: string) {
+      note.innerHTML = `<span class="rh-note-ic">${logoSvg}</span><div><p class="rh-note-h"><b>Rahat Bakery</b><span>${meta}</span></p><p class="rh-note-t">${text}</p></div>`;
+      note.classList.remove("show");
+      void note.offsetWidth;
+      note.classList.add("show");
+      window.clearTimeout(noteTimer);
+      noteTimer = window.setTimeout(hideNote, 3800);
+      say(`Telegram message: Rahat Bakery: ${text}`);
+    }
+
+    /* ---------- actions ---------- */
+    function place() {
+      const items = cartItems();
+      if (!items.length) return;
+      const code = `${S.mode === "pickup" ? "P" : "D"}-${String(S.seq++).padStart(4, "0")}`;
+      const o: Order = { code, user: "@you", mode: S.mode, items, at: Date.now(), status: 0, mine: true };
+      S.orders.unshift(o);
+      S.cart.clear();
+      S.lastCode = code;
+      S.justPlaced = true;
+      S.done.placed = true;
+      S.dots.staff = true;
+      S.dots.owner = true;
+      S.screen.customer = "track";
+      render("up", true);
+      window.setTimeout(() => notify("we got your order, staff are checking it.", "now · to @you"), reduce.matches ? 0 : 420);
+    }
+    function advance(code: string) {
+      const o = S.orders.find((x) => x.code === code);
+      if (!o || o.status >= 3) return;
+      o.status++;
+      if (o.mine && o.status === 3) S.done.completed = true;
+      if (o.mine) S.dots.owner = true;
+      render();
+      const cta = view.querySelector<HTMLElement>("[data-key=advance], [data-key=back2]");
+      cta?.focus({ preventScroll: true });
+      notify(messages(o)[o.status], `sent to ${o.user}`);
+    }
+    function updatePlay(id: number, interacted: boolean) {
+      const d = dish(id);
+      const p = S.play.get(id) ?? d.price;
+      const profit = p - d.cost;
+      const m = profit / p;
+      const set = (k: string, v: string) => { const el = view.querySelector<HTMLElement>(`[data-pg=${k}]`); if (el) el.textContent = v; };
+      set("price", fmt(p)); set("out", fmt(p)); set("profit", fmt(profit)); set("margin", pct(m));
+      set("profit2", profit >= 0 ? `Profit ${fmt(profit)}` : `Loss ${fmt(-profit)}`);
+      const badge = view.querySelector<HTMLElement>("[data-pg=badge]");
+      if (badge) { badge.textContent = `${pct(m)} margin`; badge.className = `rh-badge ${tone(m)}`; }
+      const share = Math.min(1, d.cost / p);
+      const bc = view.querySelector<HTMLElement>("[data-pg=barc]"), bp = view.querySelector<HTMLElement>("[data-pg=barp]");
+      if (bc && bp) { bc.style.flexGrow = String(share); bp.style.flexGrow = String(Math.max(0, 1 - share)); bc.classList.toggle("over", profit < 0); }
+      const n = stats().sold[id] || 0;
+      const diff = (p - d.price) * n;
+      set("delta", p === d.price
+        ? `At the menu price, today's ${n} sold made ${fmt((d.price - d.cost) * n)} profit. Drag to test a new price.`
+        : `If today's ${n} sold had been at this price: ${diff >= 0 ? "+" : "−"}${fmt(Math.abs(diff))} profit vs the menu price${profit < 0 ? ", and every sale loses money" : ""}.`);
+      const range = view.querySelector<HTMLInputElement>("[data-key=range]");
+      if (range) {
+        range.setAttribute("aria-valuetext", `${fmt(p)}, ${pct(m)} margin`);
+        const f = (p - Number(range.min)) / (Number(range.max) - Number(range.min));
+        range.style.setProperty("--f", `${(f * 100).toFixed(1)}%`);
+      }
+      if (interacted && p !== d.price && !S.done.played) { S.done.played = true; renderChrome(); }
+    }
+
+    function reset() {
+      closePop();
+      hideNote();
+      splash.classList.add("show");
+      window.setTimeout(() => {
+        S = fresh();
+        lastKey = "";
+        render();
+        say("Mini app restarted.");
+      }, reduce.matches ? 0 : 380);
+      window.setTimeout(() => splash.classList.remove("show"), reduce.matches ? 50 : 950);
+    }
+    function closePop() { pop.hidden = true; more.setAttribute("aria-expanded", "false"); }
+
+    root.addEventListener("click", (e) => {
+      const t = e.target as HTMLElement;
+      const seg = t.closest<HTMLButtonElement>(".rh-seg-btn");
+      if (seg) { setRole(seg.dataset.role as Role); return; }
+      const step = t.closest<HTMLButtonElement>("[data-goto]");
+      if (step) { setRole(step.dataset.goto as Role); return; }
+      const b = t.closest<HTMLElement>("[data-act]");
+      if (!b || !root.contains(b)) { if (!pop.hidden && !t.closest("[data-pop]")) closePop(); return; }
+      const v = b.dataset.v || "";
+      const id = Number(b.dataset.id);
+      switch (b.dataset.act) {
+        case "inc": changeQty(id, 1); break;
+        case "dec": changeQty(id, -1); break;
+        case "cat": S.cat = v; render(); break;
+        case "go": go(v); break;
+        case "mode": S.mode = v as Mode; render(); say(v === "delivery" ? `Delivery selected, fee ${fmt(FEE)}.` : "Pickup selected, no fee."); break;
+        case "place": place(); break;
+        case "role": setRole(v as Role, true); break;
+        case "open": go(`order:${v}`); break;
+        case "advance": advance(v); break;
+        case "msg": { const o = S.orders.find((x) => x.code === v); if (o) notify(`hi! Quick update on ${o.code}: we are on it.`, `sent to ${o.user}`); break; }
+        case "dish": go(`dish:${v}`); break;
+        case "reset-price": S.play.delete(Number(v)); { const r = view.querySelector<HTMLInputElement>("[data-key=range]"); if (r) r.value = String(dish(Number(v)).price); } updatePlay(Number(v), false); break;
+        case "nav":
+          if (v === "menu") { if (S.role !== "customer") { S.screen.customer = "menu"; setRole("customer"); } else go("menu"); }
+          else if (v === "cart") { if (S.role !== "customer") { S.screen.customer = "checkout"; setRole("customer"); } else go("checkout"); }
+          else if (S.role === "customer") go("track"); else go("list");
+          break;
+        case "close": reset(); break;
+        case "more": { const open = pop.hidden; pop.hidden = !open; more.setAttribute("aria-expanded", String(open)); if (open) pop.querySelector("button")?.focus(); break; }
+        case "video": dlg.showModal(); break;
+      }
+    });
+    root.addEventListener("input", (e) => {
+      const r = e.target as HTMLInputElement;
+      if (r.dataset.act !== "price") return;
+      S.play.set(Number(r.dataset.id), Number(r.value));
+      updatePlay(Number(r.dataset.id), true);
+    });
+    root.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !pop.hidden) { closePop(); more.focus(); }
+    });
+    // segmented control: arrow keys move between roles
+    q(".rh-seg").addEventListener("keydown", (e) => {
+      const k = (e as KeyboardEvent).key;
+      if (k !== "ArrowLeft" && k !== "ArrowRight") return;
+      e.preventDefault();
+      const i = (ROLES.indexOf(S.role) + (k === "ArrowRight" ? 1 : 2)) % 3;
+      setRole(ROLES[i]);
+      segBtns[i].focus();
+    });
+
+    dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+    dlg.querySelector("[data-dlg-close]")!.addEventListener("click", () => dlg.close());
+    dlg.addEventListener("close", () => video.pause());
+
+    // keep "4m ago" labels honest while the staff queue is on screen
+    window.setInterval(() => {
+      if (document.hidden || S.role !== "staff") return;
+      view.querySelectorAll<HTMLElement>(".rh-oc").forEach((el) => {
+        const o = S.orders.find((x) => x.code === el.dataset.v);
+        const a = el.querySelector(".rh-ago, .rh-newtag");
+        if (o && a) a.textContent = o.mine ? `${o.status === 0 ? "New · " : "Your order · "}${ago(o.at)}` : ago(o.at);
+      });
+    }, 30000);
+
+    render();
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-rahat]").forEach(init);
+</script>
+
+<style is:global>
+  .rh {
+    --rh-bg: #fdf8f0;
+    --rh-card: #ffffff;
+    --rh-line: #f0e6d6;
+    --rh-amber: #f2a33a;
+    --rh-amber-2: #e8962a;
+    --rh-amber-ink: #a95c06;
+    --rh-amber-soft: #fff1dc;
+    --rh-ink: #1f1a14;
+    --rh-muted: #7a6f60;
+    --rh-tg: #2481cc;
+    --rh-green: #1f9d55;
+    container: rahat / inline-size;
+    display: grid;
+    gap: 18px;
+    color: var(--ink);
+  }
+  .rh button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .rh :focus-visible { outline: 2.5px solid var(--accent, #e8962a); outline-offset: 2px; }
+  .rh-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* ---------- role switcher ---------- */
+  .rh-seg {
+    position: relative; display: grid; grid-template-columns: repeat(3, 1fr);
+    padding: 5px; border-radius: 18px; background: var(--paper-2); border: 1px solid var(--line);
+    max-width: 520px; margin: 0 auto; width: 100%;
+  }
+  .rh-seg-pill {
+    position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc((100% - 10px) / 3);
+    border-radius: 13px; background: var(--card);
+    box-shadow: 0 1px 0 rgba(25,23,20,.05), 0 6px 18px -8px rgba(120,70,10,.45), inset 0 -2px 0 var(--accent);
+    transform: translateX(calc(var(--rh-seg-i, 0) * 100%));
+    transition: transform .42s cubic-bezier(.3,1.35,.5,1);
+  }
+  .rh { --rh-seg-i: 0; }
+  .rh-seg-btn {
+    position: relative; z-index: 1; border: 0; background: none; padding: 9px 6px 8px; border-radius: 13px;
+    display: grid; gap: 1px; text-align: center; transition: transform .15s;
+  }
+  .rh-seg-btn:active { transform: scale(.96); }
+  .rh-seg-t { font: 650 15px/1.2 var(--font-display); color: var(--muted); transition: color .25s; display: inline-flex; justify-content: center; align-items: center; gap: 6px; }
+  .rh-seg-s { font-size: 11.5px; color: var(--muted); line-height: 1.3; opacity: .85; }
+  .rh-seg-btn[aria-pressed="true"] .rh-seg-t { color: var(--ink); }
+  .rh-seg-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fail); box-shadow: 0 0 0 0 rgba(214,69,69,.5); animation: rh-ping 1.8s infinite; }
+  .rh-seg-dot[hidden] { display: none; }
+  @keyframes rh-ping { 0% { box-shadow: 0 0 0 0 rgba(214,69,69,.45) } 70%,100% { box-shadow: 0 0 0 7px rgba(214,69,69,0) } }
+
+  /* ---------- layout ---------- */
+  .rh-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; justify-items: center; }
+  @container rahat (min-width: 640px) {
+    .rh-body { grid-template-columns: 384px minmax(0, 1fr); justify-items: stretch; align-items: center; }
+  }
+
+  /* ---------- phone ---------- */
+  .rh-phone {
+    width: 100%; max-width: 384px; padding: 11px; border-radius: 56px;
+    background: linear-gradient(160deg, #3a332c, #14110e 55%, #2a241f);
+    box-shadow: inset 0 0 0 1.5px #5a5148, inset 0 0 0 4px #1a1714, 0 40px 70px -30px rgba(80,45,5,.55), 0 10px 24px -10px rgba(0,0,0,.3);
+  }
+  .rh-screen {
+    position: relative; height: 720px; border-radius: 45px; overflow: hidden; isolation: isolate;
+    background: var(--rh-bg); color: var(--rh-ink); display: flex; flex-direction: column;
+    font: 400 14px/1.4 var(--font-body);
+  }
+  .rh-status { flex: none; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 6px 26px 0 34px; font: 600 15px/1 var(--font-body); position: relative; background: #f7f7f8; }
+  .rh-island { position: absolute; left: 50%; top: 10px; width: 104px; height: 30px; margin-left: -52px; background: #0b0a09; border-radius: 20px; }
+  .rh-sicons { display: inline-flex; gap: 5px; align-items: center; fill: currentColor; }
+
+  .rh-tg { flex: none; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 2px 10px 7px; background: #f7f7f8; border-bottom: 1px solid #e6e6ea; }
+  .rh-tg-close { justify-self: start; display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; color: var(--rh-tg) !important; font-size: 16px !important; padding: 6px 4px; border-radius: 8px; }
+  .rh-tg-close:active, .rh-tg-more:active { opacity: .5; }
+  .rh-tg-title { text-align: center; line-height: 1.15; }
+  .rh-tg-title strong { display: block; font: 650 15.5px/1.2 var(--font-body); }
+  .rh-tg-title span { font-size: 12.5px; color: #8e8e93; }
+  .rh-tg-more { justify-self: end; border: 0; background: none; color: var(--rh-tg) !important; fill: var(--rh-tg); padding: 6px; border-radius: 50%; display: grid; }
+
+  .rh-head { flex: none; display: flex; align-items: center; gap: 9px; padding: 10px 14px; background: var(--rh-card); border-bottom: 1px solid var(--rh-line); }
+  .rh-logo { width: 34px; height: 34px; flex: none; display: grid; }
+  .rh-logo svg, .rh-note-ic svg, .rh-splash-logo svg, .rh-hero-sun svg { width: 100%; height: 100%; }
+  .rh-brand { display: grid; line-height: 1.15; min-width: 0; }
+  .rh-brand strong { font: 700 15.5px/1.2 var(--font-body); white-space: nowrap; }
+  .rh-brand span { font-size: 11.5px; color: var(--rh-muted); }
+  .rh-pill { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font: 600 11.5px/1 var(--font-body); color: #17733f; background: #e6f6ec; border: 1px solid #bfe6cd; border-radius: 999px; padding: 6px 9px; white-space: nowrap; transition: background .3s, color .3s; }
+  .rh-pill i { width: 8px; height: 8px; border-radius: 50%; background: #22b35f; box-shadow: 0 0 0 2px #fff; }
+  .rh-pill[data-role="staff"] { color: #8a4b04; background: var(--rh-amber-soft); border-color: #f6d3a0; }
+  .rh-pill[data-role="staff"] i { background: var(--rh-amber-2); }
+  .rh-pill[data-role="owner"] { color: #3d3a8c; background: #ecebfb; border-color: #d3d0f3; }
+  .rh-pill[data-role="owner"] i { background: #6c63d9; }
+
+  .rh-view { flex: 1; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #e6d6bd transparent; outline: none; }
+  .rh-pg { padding: 14px 14px 18px; display: grid; gap: 12px; align-content: start; min-height: 100%; }
+  .rh-pg.in-fwd { animation: rh-in-r .34s cubic-bezier(.2,.8,.2,1); }
+  .rh-pg.in-back { animation: rh-in-l .34s cubic-bezier(.2,.8,.2,1); }
+  .rh-pg.in-right { animation: rh-in-r2 .42s cubic-bezier(.2,.8,.2,1); }
+  .rh-pg.in-left { animation: rh-in-l2 .42s cubic-bezier(.2,.8,.2,1); }
+  .rh-pg.in-up { animation: rh-in-u .45s cubic-bezier(.2,.8,.2,1); }
+  @keyframes rh-in-r { from { transform: translateX(36px); opacity: 0 } }
+  @keyframes rh-in-l { from { transform: translateX(-36px); opacity: 0 } }
+  @keyframes rh-in-r2 { from { transform: translateX(22px) scale(.98); opacity: 0; filter: blur(3px) } }
+  @keyframes rh-in-l2 { from { transform: translateX(-22px) scale(.98); opacity: 0; filter: blur(3px) } }
+  @keyframes rh-in-u { from { transform: translateY(26px); opacity: 0 } }
+
+  .rh-h { font: 700 19px/1.2 var(--font-display); letter-spacing: -.01em; margin: 0; outline: none; }
+  .rh-bar { display: flex; align-items: center; gap: 8px; min-height: 36px; }
+  .rh-bar .rh-h { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rh-bar .rh-st { margin-left: auto; }
+  .rh-back { border: 0; background: var(--rh-card); width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; box-shadow: 0 0 0 1px var(--rh-line); flex: none; transition: transform .12s; }
+  .rh-back:active { transform: scale(.9); }
+  .rh-tag { font: 600 11px/1 var(--font-body); padding: 5px 8px; border-radius: 999px; background: var(--rh-ink); color: #fff; }
+  .rh-illu { margin-left: auto; font: 500 10.5px/1.2 var(--font-mono); color: var(--rh-muted); background: #f4ece0; padding: 4px 7px; border-radius: 6px; white-space: nowrap; }
+  .rh-label { margin: 4px 0 -4px; font: 700 11px/1.3 var(--font-body); letter-spacing: .09em; text-transform: uppercase; color: var(--rh-muted); display: flex; align-items: center; gap: 6px; }
+  .rh-label-r { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .rh-count { background: var(--rh-amber-soft); color: var(--rh-amber-ink); border-radius: 999px; padding: 1px 7px; letter-spacing: 0; }
+  .rh-mini { font-size: 12px; color: var(--rh-muted); margin: 0; line-height: 1.45; }
+  .rh-mini.center { text-align: center; }
+  .rh-panel { background: var(--rh-card); border-radius: 16px; padding: 12px 13px; box-shadow: 0 0 0 1px var(--rh-line); display: grid; gap: 7px; }
+  .rh-row { display: flex; justify-content: space-between; gap: 10px; margin: 0; font-size: 13.5px; }
+  .rh-row em { font-style: normal; color: var(--rh-muted); }
+  .rh-row.muted { color: var(--rh-muted); font-size: 13px; }
+  .rh-row-t { font: 700 15px/1.3 var(--font-body); padding-top: 7px; border-top: 1px solid var(--rh-line); }
+  .rh-sep { padding-top: 7px; border-top: 1px dashed var(--rh-line); }
+
+  /* buttons */
+  .rh-cta {
+    border: 0; border-radius: 14px; padding: 13px 16px; display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: linear-gradient(180deg, #f7b04c, var(--rh-amber-2)); color: #2b1703 !important; font: 700 15px/1.2 var(--font-body) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 8px 18px -10px rgba(200,110,10,.8);
+    transition: transform .12s, filter .15s;
+  }
+  .rh-cta:hover { filter: brightness(1.03); }
+  .rh-cta:active { transform: scale(.97); }
+  .rh-ghost { border: 0; border-radius: 12px; padding: 11px 14px; background: #f5ede1; color: var(--rh-ink); font-weight: 600; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 7px; transition: transform .12s, background .15s; }
+  .rh-ghost:hover { background: #efe4d3; }
+  .rh-ghost:active { transform: scale(.97); }
+  .rh-linkbtn { border: 0; background: none; color: var(--rh-amber-ink); font-weight: 650; font-size: 13px; display: inline-flex; align-items: center; gap: 3px; padding: 4px 2px; border-radius: 6px; }
+
+  /* ---------- customer: menu ---------- */
+  .rh-hero { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 18px; background: linear-gradient(120deg, #ffcf86, #f4a43c 70%); color: #3a2002; box-shadow: 0 10px 22px -14px rgba(200,110,10,.9); }
+  .rh-hero-t { font: 700 17px/1.2 var(--font-display); }
+  .rh-hero-s { font-size: 12px; opacity: .85; margin-top: 2px; }
+  .rh-hero-sun { width: 76px; height: 76px; flex: none; margin: -14px -24px -14px 0; opacity: .55; animation: rh-spin 40s linear infinite; }
+  @keyframes rh-spin { to { transform: rotate(360deg) } }
+  .rh-chips { display: flex; gap: 7px; overflow-x: auto; margin: 0 -14px; padding: 2px 14px 4px; scrollbar-width: none; }
+  .rh-chips::-webkit-scrollbar { display: none; }
+  .rh-chip { flex: none; border: 0; padding: 7px 13px; border-radius: 999px; background: #f3eadc; font-size: 13px !important; font-weight: 550; color: var(--rh-ink); transition: background .2s, color .2s, transform .12s; }
+  .rh-chip[aria-pressed="true"] { background: var(--rh-amber-2); color: #2b1703; font-weight: 650; }
+  .rh-chip:active { transform: scale(.94); }
+  .rh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .rh-card { background: var(--rh-card); border-radius: 18px; padding: 7px 7px 10px; box-shadow: 0 0 0 1px var(--rh-line), 0 6px 14px -12px rgba(120,70,10,.5); text-align: center; display: grid; gap: 2px; min-width: 0; }
+  .rh-photo { aspect-ratio: 1; border-radius: 13px; overflow: hidden; background: #f6ead8; margin-bottom: 5px; }
+  .rh-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .rh-card h4 { margin: 0; font: 600 13.5px/1.25 var(--font-body); min-height: 2.5em; display: grid; place-items: center; padding: 0 2px; }
+  .rh-price { color: var(--rh-amber-ink); font-weight: 700; font-size: 14px; }
+  .rh-ctl { height: 38px; display: grid; place-items: center; margin-top: 4px; }
+  .rh-plus { width: 36px; height: 36px; border-radius: 50%; border: 0; display: grid; place-items: center; background: linear-gradient(180deg, #f7b04c, var(--rh-amber-2)); color: #2b1703; box-shadow: 0 6px 12px -6px rgba(200,110,10,.9); transition: transform .14s cubic-bezier(.3,1.6,.5,1); animation: rh-pop .28s cubic-bezier(.3,1.6,.5,1); }
+  .rh-plus:active { transform: scale(.85); }
+  .rh-stepper { display: inline-flex; align-items: center; gap: 4px; animation: rh-pop .28s cubic-bezier(.3,1.6,.5,1); }
+  .rh-stepper button { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; border: 1.8px solid var(--rh-amber-2); background: var(--rh-card); color: var(--rh-amber-ink); transition: transform .12s; }
+  .rh-stepper button:last-child { background: linear-gradient(180deg, #f7b04c, var(--rh-amber-2)); color: #2b1703; border-color: transparent; }
+  .rh-stepper button:active { transform: scale(.85); }
+  .rh-stepper span { min-width: 24px; text-align: center; font: 700 15px/1 var(--font-body); }
+  .rh-stepper.sm button { width: 28px; height: 28px; }
+  .rh-stepper.sm span { min-width: 18px; font-size: 13.5px; }
+  @keyframes rh-pop { from { transform: scale(.6); opacity: 0 } }
+  .rh-cartslot { position: sticky; bottom: 4px; z-index: 2; margin-top: -2px; }
+  .rh-cartbar { width: 100%; border: 0; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 16px; background: #221a12; color: #fff !important; box-shadow: 0 14px 26px -12px rgba(30,15,0,.7); transition: transform .12s; }
+  .rh-cartbar:active { transform: scale(.98); }
+  .rh-cartbar.enter { animation: rh-in-u .35s cubic-bezier(.2,.8,.2,1); }
+  .rh-cartbar.bump .rh-cb-n { animation: rh-bump .35s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes rh-bump { 40% { transform: scale(1.3) } }
+  .rh-cb-n { min-width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--rh-amber); color: #2b1703; font-weight: 800; font-size: 13px; }
+  .rh-cb-l { font-size: 12.5px; opacity: .75; }
+  .rh-cartbar strong { margin-left: auto; font-size: 14px; }
+  .rh-cb-go { display: inline-flex; align-items: center; gap: 2px; color: #ffc46e; font-weight: 650; font-size: 13px; }
+
+  /* checkout */
+  .rh-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .rh-mode { border: 1.5px solid var(--rh-line); background: var(--rh-card); border-radius: 16px; padding: 12px 8px 10px; display: grid; justify-items: center; gap: 3px; text-align: center; color: var(--rh-muted) !important; transition: border-color .2s, background .2s, transform .12s; }
+  .rh-mode b { color: var(--rh-ink); font-size: 14px; }
+  .rh-mode span { font-size: 11.5px; line-height: 1.3; }
+  .rh-mode[aria-pressed="true"] { border-color: var(--rh-amber-2); background: var(--rh-amber-soft); color: var(--rh-amber-ink) !important; box-shadow: 0 0 0 3px rgba(232,150,42,.15); }
+  .rh-mode[aria-pressed="true"] b { color: var(--rh-amber-ink); }
+  .rh-mode:active { transform: scale(.97); }
+  .rh-info { background: #fbf3e4; border: 1px solid #f1e2c7; border-radius: 14px; padding: 10px 12px; display: grid; gap: 7px; animation: rh-in-u .3s; }
+  .rh-info p { margin: 0; display: flex; gap: 8px; font-size: 12.5px; color: #5d4a30; align-items: flex-start; }
+  .rh-info svg { flex: none; margin-top: 1px; color: var(--rh-amber-ink); }
+  .rh-info em { display: block; font-style: normal; color: var(--rh-amber-ink); font-weight: 600; }
+  .rh-lines { list-style: none; margin: 0; padding: 4px 12px; background: var(--rh-card); border-radius: 16px; box-shadow: 0 0 0 1px var(--rh-line); }
+  .rh-lines li { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "i n s" "i n t"; column-gap: 9px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--rh-line); }
+  .rh-lines li:last-child { border-bottom: 0; }
+  .rh-lines img { grid-area: i; width: 40px; height: 40px; border-radius: 10px; object-fit: cover; }
+  .rh-lines li > div:not(.rh-stepper) { grid-area: n; display: grid; min-width: 0; }
+  .rh-lines b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rh-lines li > div span { font-size: 11.5px; color: var(--rh-muted); }
+  .rh-lines .rh-stepper { grid-area: s; justify-self: end; }
+  .rh-lines strong { grid-area: t; justify-self: end; font-size: 12.5px; }
+  .rh-sum { margin: 0; background: var(--rh-card); border-radius: 16px; padding: 10px 13px; box-shadow: 0 0 0 1px var(--rh-line); display: grid; gap: 5px; }
+  .rh-sum div { display: flex; justify-content: space-between; font-size: 13px; color: var(--rh-muted); }
+  .rh-sum dd { margin: 0; }
+  .rh-sum .rh-total { color: var(--rh-ink); font: 700 16px/1.3 var(--font-body); border-top: 1px solid var(--rh-line); padding-top: 7px; margin-top: 2px; }
+  .rh-empty { display: grid; justify-items: center; gap: 4px; text-align: center; padding: 36px 10px; color: var(--rh-muted); }
+  .rh-empty strong { color: var(--rh-ink); font-size: 15px; }
+  .rh-empty .rh-cta { margin-top: 12px; }
+  .rh-empty-ic { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: var(--rh-amber-soft); color: var(--rh-amber-ink); margin-bottom: 6px; }
+
+  /* success / tracking */
+  .rh-ok { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 6px 0 2px; }
+  .rh-ok-ic { color: var(--rh-green); display: grid; }
+  .rh-ok.pop .rh-ok-ic { animation: rh-pop .5s cubic-bezier(.3,1.7,.5,1); }
+  .rh-ok.pop .rh-ok-ic path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: rh-draw .45s .25s ease-out forwards; }
+  @keyframes rh-draw { to { stroke-dashoffset: 0 } }
+  .rh-ok-k { font: 700 11px/1.3 var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--rh-green); margin-top: 4px; }
+  .rh-code { font: 700 30px/1.1 var(--font-mono) !important; letter-spacing: -.02em !important; }
+  .rh-ok-s { font-size: 12.5px; color: var(--rh-muted); }
+  .rh-track { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 0; }
+  .rh-track li { position: relative; display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 13.5px; color: var(--rh-muted); }
+  .rh-track li:not(:last-child)::after { content: ""; position: absolute; left: 10px; top: 26px; height: 12px; width: 2px; background: var(--rh-line); }
+  .rh-track li.done:not(:last-child)::after { background: var(--rh-green); }
+  .rh-track i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--rh-line); background: var(--rh-card); flex: none; }
+  .rh-track li.done { color: var(--rh-ink); }
+  .rh-track li.done i { background: var(--rh-green); border-color: var(--rh-green); color: #fff; }
+  .rh-track li.now { color: var(--rh-ink); font-weight: 650; }
+  .rh-track li.now i { border-color: var(--rh-amber-2); box-shadow: 0 0 0 4px rgba(232,150,42,.18); }
+  .rh-track li.now i::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--rh-amber-2); animation: rh-blink 1.4s infinite; }
+  @keyframes rh-blink { 50% { opacity: .25 } }
+
+  /* ---------- staff ---------- */
+  .rh-hint { border: 1.5px dashed #ecc58b; background: #fffaf1; border-radius: 16px; padding: 12px 14px; display: grid; gap: 4px; font-size: 13px; color: #6b4e22; }
+  .rh-hint .rh-linkbtn { justify-self: start; }
+  .rh-olist { display: grid; gap: 9px; }
+  .rh-oc { border: 0; text-align: left; background: var(--rh-card); border-radius: 16px; padding: 11px 13px; box-shadow: 0 0 0 1px var(--rh-line); display: grid; gap: 6px; transition: transform .12s, box-shadow .2s; }
+  .rh-oc:hover { box-shadow: 0 0 0 1px #e9cfa6, 0 8px 18px -12px rgba(120,70,10,.5); }
+  .rh-oc:active { transform: scale(.98); }
+  .rh-oc.mine { box-shadow: 0 0 0 2px var(--rh-amber-2), 0 10px 22px -12px rgba(200,110,10,.7); background: linear-gradient(180deg, #fffaf1, #fff); animation: rh-arrive .6s cubic-bezier(.2,.9,.3,1.2); }
+  .rh-oc.done { opacity: .72; }
+  @keyframes rh-arrive { from { transform: translateY(-14px) scale(.97); opacity: 0 } }
+  .rh-oc-top, .rh-oc-mid { display: flex; align-items: center; gap: 8px; }
+  .rh-ago { margin-left: auto; font-size: 12px; color: var(--rh-muted); white-space: nowrap; }
+  .rh-newtag { margin-left: auto; font: 700 10.5px/1 var(--font-body); letter-spacing: .05em; text-transform: uppercase; color: #fff; background: var(--fail); border-radius: 999px; padding: 4px 8px; white-space: nowrap; }
+  .rh-oc-mid b { font: 700 15px/1 var(--font-mono); }
+  .rh-oc-u { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--rh-muted); min-width: 0; }
+  .rh-oc-u svg { width: 15px; height: 15px; flex: none; }
+  .rh-oc-n { margin-left: auto; font-size: 11.5px; color: var(--rh-muted); background: #f5eee3; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  .rh-oc-sum { color: var(--rh-amber-ink); font-weight: 700; font-size: 15px; }
+  .rh-st { font: 700 10px/1 var(--font-body); letter-spacing: .07em; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; white-space: nowrap; }
+  .rh-st.st0 { background: #fff1c2; color: #7a5600; }
+  .rh-st.st1 { background: #e3ecff; color: #2a4fa8; }
+  .rh-st.st2 { background: #efe6ff; color: #6234b8; }
+  .rh-st.st3 { background: #dff3e6; color: #17733f; }
+  .rh-od { gap: 6px; }
+  .rh-prog { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 2px 0; }
+  .rh-prog span { display: grid; gap: 6px; justify-items: center; text-align: center; position: relative; }
+  .rh-prog i { width: 100%; height: 6px; border-radius: 3px; background: #efe5d6; position: relative; overflow: hidden; }
+  .rh-prog i::after { content: ""; position: absolute; inset: 0; background: var(--rh-amber-2); transform: scaleX(0); transform-origin: left; transition: transform .5s cubic-bezier(.2,.8,.2,1); }
+  .rh-prog .on i::after { transform: scaleX(1); }
+  .rh-prog span:last-child.on i::after { background: var(--rh-green); }
+  .rh-prog em { font-style: normal; font-size: 10.5px; line-height: 1.2; color: var(--rh-muted); }
+  .rh-prog .cur em { color: var(--rh-ink); font-weight: 650; }
+  .rh-donemsg { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0; color: var(--rh-green); font-weight: 600; font-size: 13px; }
+
+  /* ---------- owner ---------- */
+  .rh-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .rh-kpi { background: var(--rh-card); border-radius: 16px; padding: 11px 12px; box-shadow: 0 0 0 1px var(--rh-line); display: grid; gap: 2px; min-width: 0; }
+  .rh-kpi span { font-size: 11.5px; color: var(--rh-muted); font-weight: 600; }
+  .rh-kpi b { font: 700 17px/1.2 var(--font-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rh-kpi em { font-style: normal; font-size: 11px; color: var(--rh-muted); }
+  .rh-kpi.hot { box-shadow: 0 0 0 1.5px #f2c482; }
+  .rh-kpi.hot b { animation: rh-flash 1.2s ease-out; }
+  @keyframes rh-flash { 0% { color: var(--rh-amber-ink); transform: translateY(4px) } 100% { color: inherit } }
+  .rh-yours { margin: 0; display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; line-height: 1.45; padding: 10px 12px; border-radius: 14px; background: #e9f7ee; color: #1d5a35; }
+  .rh-yours svg { flex: none; margin-top: 2px; }
+  .rh-yours.idle { background: #f5eee3; color: var(--rh-muted); }
+  .rh-dlist { display: grid; background: var(--rh-card); border-radius: 16px; box-shadow: 0 0 0 1px var(--rh-line); overflow: hidden; }
+  .rh-drow { border: 0; background: none; display: flex; align-items: center; gap: 10px; padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--rh-line); transition: background .15s; }
+  .rh-drow:last-child { border-bottom: 0; }
+  .rh-drow:hover { background: #fff8ec; }
+  .rh-drow:active { background: #fdf0d9; }
+  .rh-drow img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; flex: none; }
+  .rh-drow-m { display: grid; min-width: 0; flex: 1; }
+  .rh-drow-m b { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rh-drow-m span { font-size: 11.5px; color: var(--rh-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rh-drow-r { display: grid; justify-items: end; gap: 3px; flex: none; }
+  .rh-drow-r em { font-style: normal; font-size: 10.5px; color: var(--rh-muted); }
+  .rh-badge { font: 700 11.5px/1 var(--font-body); padding: 4px 7px; border-radius: 7px; white-space: nowrap; transition: background .2s, color .2s; }
+  .rh-badge.good { background: #dff3e6; color: #17733f; }
+  .rh-badge.mid { background: #fff0cf; color: #85580a; }
+  .rh-badge.low { background: #fde2d2; color: #a7400f; }
+  .rh-badge.neg { background: #fbdcdc; color: #b42727; }
+  .rh-dhead { display: flex; align-items: center; gap: 11px; }
+  .rh-dhead img { width: 56px; height: 56px; border-radius: 14px; object-fit: cover; }
+  .rh-dhead p { margin: 0; font-size: 12.5px; color: var(--rh-muted); display: grid; gap: 5px; justify-items: start; }
+  .rh-dhead .rh-illu { margin-left: 0; }
+  .rh-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .rh-tiles div { background: var(--rh-amber-soft); border-radius: 12px; padding: 8px 4px; text-align: center; display: grid; gap: 1px; min-width: 0; }
+  .rh-tiles b { font: 700 12.5px/1.2 var(--font-body); color: var(--rh-amber-ink); font-variant-numeric: tabular-nums; }
+  .rh-tiles span { font-size: 10.5px; color: var(--rh-muted); }
+  .rh-play { background: #221a12; color: #f7efe3; border-radius: 18px; padding: 12px 14px 13px; display: grid; gap: 8px; box-shadow: 0 16px 30px -18px rgba(30,15,0,.8); }
+  .rh-play .rh-label { color: #c9b89f; margin: 0; }
+  .rh-play .rh-linkbtn { color: #ffc46e; }
+  .rh-play .rh-mini { color: #c9b89f; }
+  .rh-play-h { display: flex; justify-content: space-between; align-items: center; }
+  .rh-play-p { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .rh-play output { font: 700 25px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+  .rh-range { --f: 50%; -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: transparent; margin: 0; cursor: pointer; }
+  .rh-range::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--rh-amber) var(--f), #4a3d2e var(--f)); }
+  .rh-range::-moz-range-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--rh-amber) var(--f), #4a3d2e var(--f)); }
+  .rh-range::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -9px; border-radius: 50%; background: #fff; border: 4px solid var(--rh-amber); box-shadow: 0 3px 8px rgba(0,0,0,.4); transition: transform .12s; }
+  .rh-range::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 4px solid var(--rh-amber); }
+  .rh-range:active::-webkit-slider-thumb { transform: scale(1.15); }
+  .rh-range:focus-visible { outline-offset: 4px; border-radius: 8px; }
+  .rh-range-l { display: flex; justify-content: space-between; font-size: 11px; color: #a8977f; margin-top: -4px; }
+  .rh-split { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; }
+  .rh-split i { flex: 1 1 0; transition: flex-grow .2s; min-width: 0; }
+  .rh-split .c { background: #8c7b66; }
+  .rh-split .c.over { background: #e05a4a; }
+  .rh-split .p { background: #3cc47a; }
+  .rh-split-l { display: flex; justify-content: space-between; margin: 0; font-size: 12px; color: #e3d6c3; }
+  .rh-split-l > span { display: inline-flex; align-items: center; gap: 5px; }
+  .rh-split-l i { width: 8px; height: 8px; border-radius: 2px; }
+  .rh-split-l i.c { background: #8c7b66; }
+  .rh-split-l i.p { background: #3cc47a; }
+  .rh-cost { gap: 10px; }
+  .rh-cost-in { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 12px; align-items: center; }
+  .rh-donut { width: 128px; height: 128px; }
+  .rh-donut circle { transition: opacity .2s; }
+  .rh-dn-k { font: 500 9.5px var(--font-body); fill: var(--rh-muted); }
+  .rh-dn-v { font: 700 13px var(--font-body); fill: var(--rh-ink); }
+  .rh-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12px; }
+  .rh-legend li { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .rh-legend li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rh-legend li b { margin-left: auto; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .rh-legend i, .rh-ing i { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+  .rh-legend .muted { color: var(--rh-muted); }
+  .rh-ing { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .rh-ing th { text-align: left; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--rh-muted); font-weight: 700; padding: 4px 0; border-bottom: 1px solid var(--rh-line); }
+  .rh-ing td { padding: 5px 0; border-bottom: 1px solid #f6efe4; }
+  .rh-ing td:first-child i { margin-right: 6px; }
+  .rh-ing td:nth-child(2) { color: var(--rh-muted); padding: 5px 6px; }
+  .rh-ing th:last-child, .rh-ing td:last-child { text-align: right; white-space: nowrap; }
+  .rh-ing tfoot td { font-weight: 700; border-bottom: 0; padding-top: 7px; color: var(--rh-ink); }
+
+  /* ---------- bottom nav ---------- */
+  .rh-nav { flex: none; display: grid; grid-template-columns: repeat(3, 1fr); align-items: end; padding: 6px 10px 18px; background: var(--rh-card); border-top: 2px solid var(--rh-amber); position: relative; z-index: 3; }
+  .rh-nb { border: 0; background: none; display: grid; justify-items: center; gap: 2px; font-size: 11px !important; color: #8a7e6e !important; padding: 4px 0; border-radius: 10px; transition: color .2s; position: relative; }
+  .rh-nb.on { color: var(--rh-amber-ink) !important; font-weight: 650; }
+  .rh-nb.on::before { content: ""; position: absolute; top: -8px; width: 22px; height: 3px; border-radius: 2px; background: var(--rh-amber-2); }
+  .rh-nb-cart.on::before { display: none; }
+  .rh-nb-ball { width: 50px; height: 50px; margin-top: -24px; border-radius: 50%; display: grid; place-items: center; position: relative; background: linear-gradient(180deg, #f7b04c, var(--rh-amber-2)); color: #2b1703; box-shadow: 0 0 0 4px var(--rh-card), 0 8px 16px -6px rgba(200,110,10,.8); transition: transform .15s; }
+  .rh-nb-cart:active .rh-nb-ball { transform: scale(.9); }
+  .rh-nb-badge { position: absolute; top: -3px; right: -3px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--fail); color: #fff; font: 700 11px/20px var(--font-body); font-style: normal; box-shadow: 0 0 0 2px var(--rh-card); animation: rh-pop .3s cubic-bezier(.3,1.6,.5,1); }
+
+  /* ---------- overlays inside the phone ---------- */
+  .rh-note {
+    position: absolute; left: 10px; right: 10px; top: 50px; z-index: 10; display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 12px; border-radius: 20px; background: rgba(250,250,252,.88); backdrop-filter: blur(16px) saturate(1.6); -webkit-backdrop-filter: blur(16px) saturate(1.6);
+    box-shadow: 0 14px 34px -10px rgba(20,15,5,.45), 0 0 0 .5px rgba(0,0,0,.08);
+    transform: translateY(-140%); opacity: 0; transition: transform .45s cubic-bezier(.2,.9,.3,1.15), opacity .3s; pointer-events: none;
+  }
+  .rh-note.show { transform: none; opacity: 1; }
+  .rh-note-ic { width: 34px; height: 34px; flex: none; display: grid; border-radius: 9px; overflow: hidden; }
+  .rh-note p { margin: 0; }
+  .rh-note-h { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+  .rh-note-h span { color: #8e8e93; font-size: 11.5px; white-space: nowrap; }
+  .rh-note-t { font-size: 13px; line-height: 1.35; color: #2a2620; }
+  .rh-pop { position: absolute; right: 12px; top: 92px; z-index: 11; width: min(260px, calc(100% - 24px)); background: var(--rh-card); border-radius: 16px; padding: 14px; display: grid; gap: 8px; font-size: 12.5px; color: var(--rh-muted); box-shadow: 0 20px 40px -12px rgba(20,15,5,.4), 0 0 0 1px var(--rh-line); animation: rh-in-u .25s; }
+  .rh-pop[hidden] { display: none; }
+  .rh-pop p { margin: 0; }
+  .rh-pop strong { color: var(--rh-ink); font-size: 13.5px; }
+  .rh-splash { position: absolute; inset: 0; z-index: 20; display: grid; place-content: center; justify-items: center; gap: 10px; background: var(--rh-bg); opacity: 0; pointer-events: none; transition: opacity .3s; font: 700 17px var(--font-display); }
+  .rh-splash.show { opacity: 1; pointer-events: auto; }
+  .rh-splash-logo { width: 72px; height: 72px; display: grid; }
+  .rh-splash.show .rh-splash-logo { animation: rh-spin 1.4s cubic-bezier(.4,0,.2,1); }
+
+  /* ---------- side rail ---------- */
+  .rh-side { width: 100%; max-width: 384px; display: grid; gap: 12px; align-content: start; }
+  .rh-side-h { font: 650 13px/1 var(--font-body); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; display: flex; justify-content: space-between; }
+  .rh-side-h span { font-family: var(--font-mono); color: var(--ink); letter-spacing: 0; }
+  .rh-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; counter-reset: rh; }
+  .rh-steps button { width: 100%; border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 9px 11px; display: flex; gap: 10px; align-items: center; text-align: left; font-size: 13.5px; line-height: 1.35; color: var(--ink-2); transition: border-color .2s, transform .12s, background .2s; counter-increment: rh; }
+  .rh-steps button:hover { border-color: var(--accent); }
+  .rh-steps button:active { transform: scale(.98); }
+  .rh-steps b { color: var(--ink); font-weight: 650; }
+  .rh-steps i { width: 22px; height: 22px; flex: none; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--line); font: 600 11px/1 var(--font-mono); font-style: normal; color: var(--muted); transition: background .3s, border-color .3s; }
+  .rh-steps i::before { content: counter(rh); }
+  .rh-steps .ok { background: #fbf8f1; }
+  .rh-steps .ok i { background: var(--pass); border-color: var(--pass); color: #fff; animation: rh-pop .35s cubic-bezier(.3,1.6,.5,1); }
+  .rh-steps .ok i::before { content: ""; width: 9px; height: 5px; border: solid #fff; border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
+  .rh-steps .ok b { text-decoration: line-through; text-decoration-color: rgba(31,157,85,.5); }
+  .rh-watch { justify-self: start; display: inline-flex; align-items: center; gap: 10px; border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper) !important; border-radius: 999px; padding: 7px 16px 7px 7px; font-weight: 600; font-size: 14px; transition: transform .15s, background .15s; }
+  .rh-watch:hover { transform: translateY(-1px); }
+  .rh-watch:active { transform: scale(.97); }
+  .rh-watch-ic { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #2b1703; padding-left: 2px; }
+  .rh-watch-d { font: 500 12px/1 var(--font-mono); opacity: .7; }
+  .rh-fine { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+
+  /* ---------- video dialog ---------- */
+  .rh-dlg { padding: 0; border: 0; background: transparent; width: min(960px, calc(100vw - 24px)); max-width: none; color: #fff; }
+  .rh-dlg::backdrop { background: rgba(20,14,6,.72); backdrop-filter: blur(4px); }
+  .rh-dlg[open] { animation: rh-in-u .3s cubic-bezier(.2,.8,.2,1); }
+  .rh-dlg-in { background: #14110d; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 80px -20px rgba(0,0,0,.6); }
+  .rh-dlg-top { display: flex; justify-content: space-between; align-items: center; padding: 10px 10px 10px 16px; font-size: 14px; color: #d8cdbd; }
+  .rh-dlg-x { border: 0; background: #2a241d; color: #fff !important; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; }
+  .rh-dlg-x:hover { background: #3a3128; }
+  .rh-dlg video { width: 100%; height: auto; aspect-ratio: 16 / 9; max-height: calc(100dvh - 90px); background: #000; }
+
+  /* ---------- small screens: slimmer bezel, shorter phone ---------- */
+  @container rahat (max-width: 400px) {
+    .rh-phone { padding: 6px; border-radius: 34px; }
+    .rh-screen { height: 640px; border-radius: 28px; }
+    .rh-status { height: 30px; padding: 4px 20px 0 24px; font-size: 13px; }
+    .rh-island { width: 74px; height: 22px; top: 6px; margin-left: -37px; }
+    .rh-pg { padding: 12px 11px 16px; gap: 11px; }
+    .rh-chips { margin: 0 -11px; padding: 2px 11px 4px; }
+    .rh-head { padding: 8px 11px; }
+    .rh-seg-s { display: none; }
+    .rh-seg-btn { padding: 10px 4px; }
+    .rh-note { top: 36px; }
+  }
+  @container rahat (max-width: 330px) {
+    .rh-pill { font-size: 0; padding: 5px; gap: 0; }
+    .rh-pill i { width: 9px; height: 9px; }
+    .rh-grid { gap: 8px; }
+    .rh-card h4 { font-size: 12.5px; }
+    .rh-tiles b { font-size: 11px; }
+    .rh-cost-in { grid-template-columns: 1fr; justify-items: center; }
+    .rh-legend { width: 100%; }
+    .rh-cb-l { display: none; }
+    .rh-kpi b { font-size: 15px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rh *, .rh *::before, .rh *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
+</style>

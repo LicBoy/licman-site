@@ -1,5 +1,809 @@
 ---
-// Placeholder: replaced by the real interactive demo.
+// "Watch the bot do my job": a mock labeling workstation that auto-plays the
+// Selenium + RuBERT-tiny2 loop on synthetic marketplace chats.
 ---
-<div class="ph">LabelingDemo</div>
-<style>.ph{aspect-ratio:4/3;border:2px dashed var(--line);border-radius:var(--radius);display:grid;place-items:center;font-family:var(--font-mono);color:var(--muted)}</style>
+<div class="lbl-root" data-lbl-root>
+  <div class="lbl-win">
+    <!-- Title bar + controls -->
+    <div class="lbl-bar">
+      <div class="lbl-bar-l">
+        <span class="lbl-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="lbl-app">labeling&nbsp;tool <span class="lbl-sep">/</span> <b>deal or not?</b></span>
+      </div>
+      <div class="lbl-ctrls" role="group" aria-label="Demo controls">
+        <button type="button" class="lbl-btn" data-lbl-play aria-pressed="false">
+          <svg class="lbl-ico-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11" rx="1"/><rect x="9.5" y="2.5" width="3" height="11" rx="1"/></svg>
+          <svg class="lbl-ico-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.6v10.8c0 .5.5.8.9.5l8.3-5.4c.4-.2.4-.8 0-1L4.9 2.1c-.4-.3-.9 0-.9.5z"/></svg>
+          <span data-lbl-play-label>Pause</span>
+        </button>
+        <button type="button" class="lbl-btn" data-lbl-next>
+          Next chat
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.6v10.8c0 .5.5.8.9.5L11 9V13a1 1 0 0 0 2 0V3a1 1 0 0 0-2 0v4L3.9 2.1c-.4-.3-.9 0-.9.5z"/></svg>
+        </button>
+        <div class="lbl-seg" role="group" aria-label="Playback speed">
+          <button type="button" data-lbl-speed="1" aria-pressed="true">1×</button>
+          <button type="button" data-lbl-speed="3" aria-pressed="false">3×</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipeline strip -->
+    <div class="lbl-pipe" aria-label="Pipeline">
+      <ol>
+        <li data-stage="tm"><b>Tampermonkey</b><span>saved my answers</span></li>
+        <li data-stage="json"><b>JSON</b><span>question_*.json</span></li>
+        <li data-stage="csv"><b>train.csv</b><span>5,808 chats</span></li>
+        <li data-stage="bert"><b>RuBERT-tiny2</b><span>fine-tuned</span></li>
+        <li data-stage="sel"><b>Selenium</b><span>reads &amp; clicks</span></li>
+      </ol>
+      <div class="lbl-pipe-legend" aria-hidden="true"><span>collected while I worked</span><span>every chat, live</span></div>
+    </div>
+
+    <!-- Task card -->
+    <div class="lbl-task" data-lbl-task>
+      <div class="lbl-taskhead">
+        <span class="lbl-taskid">Task <b data-lbl-taskid>#0412</b></span>
+        <span class="lbl-status" data-lbl-status><i></i><span>ready</span></span>
+      </div>
+      <div class="lbl-listing">
+        <div class="lbl-thumb" data-lbl-thumb aria-hidden="true">i</div>
+        <div class="lbl-lmeta">
+          <div class="lbl-ltitle"><span data-lbl-title>…</span> <span class="lbl-price" data-lbl-price></span></div>
+          <div class="lbl-ldesc"><span data-lbl-desc lang="ru"></span> <span class="lbl-en" data-lbl-desc-en></span></div>
+        </div>
+      </div>
+      <div class="lbl-chat" data-lbl-chat aria-label="Chat between buyer and seller"></div>
+      <div class="lbl-q">
+        <p class="lbl-qtext"><span lang="ru">Покупатель и продавец договорились о сделке?</span><span class="lbl-en">Did the buyer and seller agree on a deal?</span></p>
+        <div class="lbl-answers" data-lbl-answers>
+          <button type="button" class="lbl-ans" data-ans="0"><span lang="ru">Да</span><small>Yes</small><em class="lbl-tag" data-tag></em></button>
+          <button type="button" class="lbl-ans" data-ans="1"><span lang="ru">Нет</span><small>No</small><em class="lbl-tag" data-tag></em></button>
+          <button type="button" class="lbl-ans lbl-ans-wide" data-ans="2"><span lang="ru">Чат неинформативный</span><small>Not informative</small><em class="lbl-tag" data-tag></em></button>
+        </div>
+        <p class="lbl-hint" data-lbl-hint>Tap an answer to guess before the bot does.</p>
+      </div>
+    </div>
+
+    <!-- Model panel -->
+    <div class="lbl-model" data-lbl-model>
+      <div class="lbl-mhead">
+        <span class="lbl-mname">rubert-tiny2 <span>· CPU · max 512 tokens</span></span>
+        <ol class="lbl-steps" data-lbl-steps aria-hidden="true">
+          <li data-step="scrape">read</li><li data-step="rule">rule</li><li data-step="flat">flatten</li><li data-step="tok">tokens</li><li data-step="pred">predict</li><li data-step="wait">wait</li><li data-step="click">click</li>
+        </ol>
+      </div>
+      <div class="lbl-check" data-lbl-check>waiting for a chat…</div>
+      <div class="lbl-mgrid">
+        <div class="lbl-mcol">
+          <div class="lbl-sub"><span>text → model input</span></div>
+          <div class="lbl-flat" data-lbl-flat lang="ru"></div>
+          <div class="lbl-sub"><span>tokens</span><span data-lbl-tokcount>0 / 512</span></div>
+          <div class="lbl-chips" data-lbl-chips></div>
+        </div>
+        <div class="lbl-mcol">
+          <div class="lbl-sub"><span>softmax output</span></div>
+          <div class="lbl-bars" data-lbl-bars>
+            <div class="lbl-barrow" data-row="0"><span class="lbl-blab" lang="ru">Да</span><span class="lbl-track"><i></i></span><span class="lbl-bval">0.00</span></div>
+            <div class="lbl-barrow" data-row="1"><span class="lbl-blab" lang="ru">Нет</span><span class="lbl-track"><i></i></span><span class="lbl-bval">0.00</span></div>
+            <div class="lbl-barrow" data-row="2"><span class="lbl-blab" lang="ru">Неинформ.</span><span class="lbl-track"><i></i></span><span class="lbl-bval">0.00</span></div>
+            <div class="lbl-skip" data-lbl-skip>model skipped</div>
+          </div>
+          <div class="lbl-wait" data-lbl-wait>
+            <div class="lbl-wtext" data-lbl-wtext>human-like wait: 15 s × length factor + jitter</div>
+            <span class="lbl-wtrack"><i data-lbl-wbar></i></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run log -->
+    <div class="lbl-foot">
+      <div class="lbl-log">
+        <div class="lbl-loghead"><span>run log</span><span>task · bot · p · vs my label</span></div>
+        <ol data-lbl-log></ol>
+      </div>
+      <dl class="lbl-stats">
+        <div><dt data-lbl-n>0</dt><dd>labeled by the bot</dd></div>
+        <div><dt><span data-lbl-acc>–</span></dt><dd>agree with my own label <span data-lbl-accfrac></span></dd></div>
+        <div class="lbl-you" data-lbl-youbox hidden><dt data-lbl-you>0/0</dt><dd>your guesses</dd></div>
+        <p class="lbl-fine">demo sample · synthetic chats</p>
+      </dl>
+    </div>
+  </div>
+
+  <svg class="lbl-cursor" data-lbl-cursor viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l14 8.2-6.1 1.4 3.6 6.6-2.6 1.4-3.6-6.6L5 18.2z"/></svg>
+  <p class="sr-only" aria-live="polite" data-lbl-live></p>
+</div>
+
+<style is:global>
+  .lbl-root {
+    --lbl-a: var(--accent, #3d7cf2);
+    --lbl-a-soft: color-mix(in srgb, var(--lbl-a) 12%, var(--card));
+    --lbl-dark: #111826;
+    --lbl-dark-2: #1a2334;
+    --lbl-dark-line: #2a3549;
+    --lbl-dark-ink: #dfe6f3;
+    --lbl-dark-mut: #8d9ab1;
+    --lbl-warn: #e0a429;
+    position: relative;
+    font-family: var(--font-body);
+    color: var(--ink);
+  }
+  .lbl-root .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .lbl-win {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+
+  /* title bar */
+  .lbl-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px 12px; flex-wrap: wrap;
+    padding: 10px 12px 10px 14px; background: var(--paper-2); border-bottom: 1px solid var(--line); }
+  .lbl-bar-l { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .lbl-dots { display: inline-flex; gap: 5px; }
+  .lbl-dots i { width: 9px; height: 9px; border-radius: 50%; background: #d8cdbb; }
+  .lbl-dots i:first-child { background: var(--lbl-a); }
+  .lbl-app { font: 500 13px/1.2 var(--font-mono); color: var(--muted); white-space: nowrap; }
+  .lbl-app b { color: var(--ink); font-weight: 600; }
+  .lbl-sep { opacity: .5; }
+  .lbl-ctrls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .lbl-btn, .lbl-seg button {
+    display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--card);
+    color: var(--ink); font: 600 12.5px/1 var(--font-body); padding: 7px 10px; border-radius: 999px; cursor: pointer;
+    transition: background .15s, border-color .15s, transform .1s;
+  }
+  .lbl-btn:hover, .lbl-seg button:hover { border-color: var(--lbl-a); }
+  .lbl-btn:active { transform: translateY(1px); }
+  .lbl-btn svg { width: 12px; height: 12px; fill: currentColor; }
+  .lbl-btn .lbl-ico-play { display: none; }
+  .lbl-btn[aria-pressed="true"] .lbl-ico-play { display: block; }
+  .lbl-btn[aria-pressed="true"] .lbl-ico-pause { display: none; }
+  .lbl-btn[aria-pressed="true"] { background: var(--lbl-a); border-color: var(--lbl-a); color: #fff; }
+  .lbl-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; background: var(--card); }
+  .lbl-seg button { border: 0; padding: 5px 9px; font-family: var(--font-mono); background: transparent; }
+  .lbl-seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .lbl-root button:focus-visible { outline: 2.5px solid var(--lbl-a); outline-offset: 2px; }
+
+  /* pipeline */
+  .lbl-pipe { padding: 10px 14px 9px; border-bottom: 1px solid var(--line); }
+  .lbl-pipe ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .lbl-pipe li { position: relative; padding: 6px 8px; border-radius: 9px; background: var(--paper); border: 1px solid var(--line);
+    min-width: 0; transition: background .25s, border-color .25s, box-shadow .25s; }
+  .lbl-pipe li:not(:last-child)::after { content: ""; position: absolute; right: -6px; top: 50%; width: 6px; height: 1.5px; background: var(--line); }
+  .lbl-pipe b { display: block; font: 600 11.5px/1.2 var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lbl-pipe span { display: block; font-size: 10.5px; color: var(--muted); line-height: 1.25; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lbl-pipe li[data-stage="tm"], .lbl-pipe li[data-stage="json"], .lbl-pipe li[data-stage="csv"] { background: transparent; border-style: dashed; }
+  .lbl-pipe li.is-on { background: var(--lbl-a-soft); border-color: var(--lbl-a); border-style: solid; box-shadow: 0 0 0 3px color-mix(in srgb, var(--lbl-a) 14%, transparent); }
+  .lbl-pipe li.is-on b { color: var(--lbl-a); }
+  .lbl-pipe-legend { display: grid; grid-template-columns: 3fr 2fr; gap: 6px; margin-top: 5px; font: 500 10px/1.2 var(--font-mono); color: var(--muted); letter-spacing: .02em; }
+  .lbl-pipe-legend span { border-top: 1px solid var(--line); padding-top: 4px; text-align: center; }
+
+  /* task */
+  .lbl-task { padding: 12px 14px 12px; }
+  .lbl-taskhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
+  .lbl-taskid { font: 500 12px/1 var(--font-mono); color: var(--muted); }
+  .lbl-taskid b { color: var(--ink); }
+  .lbl-status { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; font: 600 11.5px/1 var(--font-mono); color: var(--lbl-a);
+    background: var(--lbl-a-soft); padding: 5px 9px; border-radius: 999px; }
+  .lbl-status i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: lbl-pulse 1.1s ease-in-out infinite; }
+  .lbl-status.is-paused { color: var(--muted); background: var(--paper-2); }
+  .lbl-status.is-paused i { animation: none; }
+  .lbl-status.is-warn { color: #9a6a00; background: #fbf0d6; }
+  .lbl-status.is-ok { color: var(--pass); background: var(--pass-soft, #dff3e6); }
+  .lbl-status.is-bad { color: var(--fail); background: #fbe3e3; }
+  @keyframes lbl-pulse { 50% { opacity: .35; } }
+
+  .lbl-listing { display: flex; gap: 11px; align-items: center; padding: 9px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+  .lbl-thumb { flex: none; width: 44px; height: 44px; border-radius: 9px; display: grid; place-items: center;
+    font: 700 19px/1 var(--font-display); color: #fff; background: linear-gradient(135deg, var(--lbl-a), #7aa6f7); }
+  .lbl-lmeta { min-width: 0; }
+  .lbl-ltitle { font: 600 15px/1.25 var(--font-display); }
+  .lbl-price { font-family: var(--font-mono); font-size: 13px; color: var(--lbl-a); white-space: nowrap; margin-left: 4px; }
+  .lbl-ldesc { font-size: 12.5px; color: var(--ink-2); line-height: 1.35; margin-top: 2px; }
+  .lbl-en { color: var(--muted); font-size: 11.5px; font-style: italic; }
+  .lbl-ldesc .lbl-en::before { content: "· "; font-style: normal; }
+
+  .lbl-chat { height: 218px; overflow-y: auto; overscroll-behavior: contain; padding: 10px 2px 6px; display: flex; flex-direction: column; gap: 7px;
+    scrollbar-width: thin; }
+  .lbl-msg { max-width: 82%; display: flex; flex-direction: column; animation: lbl-in .28s ease-out both; }
+  .lbl-msg.is-b { align-self: flex-start; }
+  .lbl-msg.is-s { align-self: flex-end; align-items: flex-end; }
+  .lbl-who { font: 600 10px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 4px 3px; }
+  .lbl-bub { padding: 7px 11px 6px; border-radius: 14px; line-height: 1.32; }
+  .lbl-msg.is-b .lbl-bub { background: var(--paper-2); border-bottom-left-radius: 4px; }
+  .lbl-msg.is-s .lbl-bub { background: var(--lbl-a); color: #fff; border-bottom-right-radius: 4px; }
+  .lbl-bub .ru { display: block; font-size: 14px; }
+  .lbl-bub .lbl-en { display: block; margin-top: 2px; }
+  .lbl-msg.is-s .lbl-en { color: rgba(255, 255, 255, .78); }
+  .lbl-empty { margin: auto; text-align: center; font: 500 12px/1.4 var(--font-mono); color: var(--muted); padding: 8px 12px;
+    border: 1px dashed var(--line); border-radius: 10px; animation: lbl-in .28s ease-out both; }
+  @keyframes lbl-in { from { opacity: 0; transform: translateY(6px); } }
+
+  .lbl-q { border-top: 1px solid var(--line); padding-top: 10px; }
+  .lbl-qtext { font-weight: 600; font-size: 14px; line-height: 1.3; display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; }
+  .lbl-qtext .lbl-en { font-weight: 400; }
+  .lbl-answers { display: grid; grid-template-columns: 1fr 1fr 1.6fr; gap: 8px; margin-top: 9px; }
+  .lbl-ans { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 9px 8px 8px;
+    border-radius: 11px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer;
+    font: 600 14.5px/1.15 var(--font-body); transition: border-color .2s, background .2s, transform .12s, box-shadow .2s; }
+  .lbl-ans small { font-size: 11px; font-weight: 500; color: var(--muted); }
+  .lbl-ans:hover { border-color: color-mix(in srgb, var(--lbl-a) 55%, var(--line)); }
+  .lbl-ans.is-guess { border-style: dashed; border-color: var(--ink-2); }
+  .lbl-ans.is-pred { border-color: var(--lbl-a); background: var(--lbl-a-soft); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lbl-a) 16%, transparent); }
+  .lbl-ans.is-pressed { transform: scale(.96); }
+  .lbl-ans.is-chosen { background: var(--lbl-a); border-color: var(--lbl-a); color: #fff; }
+  .lbl-ans.is-chosen small { color: rgba(255,255,255,.8); }
+  .lbl-ans.is-chosen.is-wrong { background: var(--fail); border-color: var(--fail); }
+  .lbl-ans.is-mine:not(.is-chosen) { border-color: var(--pass); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pass) 16%, transparent); }
+  .lbl-tag { position: absolute; top: -9px; right: 8px; font: 600 9.5px/1 var(--font-mono); font-style: normal; letter-spacing: .03em;
+    padding: 3px 6px; border-radius: 999px; background: var(--ink); color: var(--paper); white-space: nowrap; opacity: 0; transform: translateY(3px);
+    transition: opacity .2s, transform .2s; pointer-events: none; }
+  .lbl-tag.is-on { opacity: 1; transform: none; }
+  .lbl-tag.is-mine { background: var(--pass); color: #fff; }
+  .lbl-hint { font-size: 11.5px; color: var(--muted); margin-top: 7px; min-height: 1.4em; }
+
+  /* model panel */
+  .lbl-model { background: var(--lbl-dark); color: var(--lbl-dark-ink); padding: 12px 14px 13px; font-family: var(--font-mono); }
+  .lbl-mhead { display: flex; justify-content: space-between; align-items: center; gap: 8px 10px; flex-wrap: wrap; margin-bottom: 9px; }
+  .lbl-mname { font-size: 12px; font-weight: 600; color: #fff; }
+  .lbl-mname span { color: var(--lbl-dark-mut); font-weight: 400; }
+  .lbl-steps { list-style: none; margin: 0; padding: 0; display: flex; gap: 3px; flex-wrap: wrap; }
+  .lbl-steps li { font-size: 10px; padding: 3px 6px; border-radius: 6px; color: var(--lbl-dark-mut); background: var(--lbl-dark-2); transition: background .2s, color .2s; }
+  .lbl-steps li.is-done { color: #b8c4da; }
+  .lbl-steps li.is-done::before { content: "✓ "; color: #6fcf97; }
+  .lbl-steps li.is-on { background: var(--lbl-a); color: #fff; }
+  .lbl-steps li.is-skip { text-decoration: line-through; opacity: .5; }
+  .lbl-check { font-size: 11.5px; line-height: 1.4; color: var(--lbl-dark-mut); min-height: 1.4em; }
+  .lbl-check b { color: #fff; font-weight: 600; }
+  .lbl-check .is-warn { color: var(--lbl-warn); font-weight: 600; }
+  .lbl-mgrid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 14px; margin-top: 8px; }
+  .lbl-mcol { min-width: 0; }
+  .lbl-sub { display: flex; justify-content: space-between; gap: 6px; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: #6c7a93; margin: 0 0 5px; }
+  .lbl-sub + .lbl-flat + .lbl-sub { margin-top: 8px; }
+  .lbl-flat { font-size: 11px; line-height: 1.5; height: calc(16.5px * 4 + 12px); overflow: hidden; padding: 6px 8px;
+    border-radius: 8px; background: var(--lbl-dark-2); border: 1px solid var(--lbl-dark-line); color: #c9d3e5; word-break: break-word; }
+  .lbl-flat .k { color: #8fb4ff; }
+  .lbl-flat .caret { display: inline-block; width: 6px; height: 1.05em; vertical-align: -2px; background: var(--lbl-a); margin-left: 1px; }
+  .lbl-flat.is-skip { color: var(--lbl-dark-mut); opacity: .55; }
+  .lbl-model.is-rule .lbl-mcol:first-child { opacity: .45; }
+  .lbl-model.is-rule .lbl-chips::before { content: "— skipped"; font-size: 10.5px; color: var(--lbl-dark-mut); }
+  .lbl-chips { height: 37px; overflow: hidden; display: flex; flex-wrap: wrap; gap: 3px; align-content: flex-start; }
+  .lbl-chip { font-size: 10px; line-height: 17px; height: 17px; padding: 0 5px; border-radius: 5px; background: #22304a; color: #cdd9f0; white-space: nowrap; }
+  .lbl-chip.sp { background: color-mix(in srgb, var(--lbl-a) 45%, #22304a); color: #fff; }
+  .lbl-chip.sub { background: #1d2a40; color: #9fb0cc; }
+  .lbl-chip.more { background: transparent; border: 1px dashed var(--lbl-dark-line); color: var(--lbl-dark-mut); line-height: 15px; }
+  .lbl-bars { position: relative; display: grid; gap: 6px; }
+  .lbl-barrow { display: grid; grid-template-columns: 66px minmax(0, 1fr) 32px; align-items: center; gap: 7px; font-size: 11px; transition: opacity .3s; }
+  .lbl-blab { color: #c9d3e5; white-space: nowrap; }
+  .lbl-track { height: 10px; border-radius: 99px; background: var(--lbl-dark-2); overflow: hidden; }
+  .lbl-track i { display: block; height: 100%; width: 0; border-radius: inherit; background: #4a5875; }
+  .lbl-bval { text-align: right; color: var(--lbl-dark-mut); font-variant-numeric: tabular-nums; }
+  .lbl-barrow.is-top .lbl-track i { background: var(--lbl-a); }
+  .lbl-barrow.is-top .lbl-bval, .lbl-barrow.is-top .lbl-blab { color: #fff; font-weight: 700; }
+  .lbl-skip { position: absolute; inset: -4px -4px; display: grid; place-items: center; text-align: center; font-size: 11.5px; font-weight: 600; color: var(--lbl-warn);
+    background: color-mix(in srgb, var(--lbl-dark) 72%, transparent); border: 1px dashed color-mix(in srgb, var(--lbl-warn) 55%, transparent); border-radius: 8px;
+    opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .lbl-bars.is-skip .lbl-skip { opacity: 1; }
+  .lbl-wait { margin-top: 12px; padding-top: 9px; border-top: 1px dashed var(--lbl-dark-line); }
+  .lbl-wtext { font-size: 10.5px; color: var(--lbl-dark-mut); line-height: 1.45; min-height: calc(1.45em * 3); }
+  .lbl-wtext b { color: #fff; }
+  .lbl-wtrack { display: block; height: 4px; border-radius: 9px; background: var(--lbl-dark-2); margin-top: 5px; overflow: hidden; }
+  .lbl-wtrack i { display: block; height: 100%; width: 0; background: var(--lbl-warn); }
+
+  /* footer: log + stats */
+  .lbl-foot { display: grid; grid-template-columns: minmax(0, 1fr) 168px; border-top: 1px solid var(--line); }
+  .lbl-log { padding: 10px 14px 12px; min-width: 0; border-right: 1px solid var(--line); }
+  .lbl-loghead { display: flex; justify-content: space-between; gap: 8px; font: 600 10px/1 var(--font-mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 7px; }
+  .lbl-loghead span:last-child { text-transform: none; letter-spacing: 0; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lbl-log ol { list-style: none; margin: 0; padding: 0; height: calc(4 * 21px); overflow: hidden; }
+  .lbl-log li { display: grid; grid-template-columns: 44px 1fr 34px 18px; gap: 6px; align-items: center; height: 21px;
+    font: 500 12px/1 var(--font-mono); white-space: nowrap; animation: lbl-in .3s ease-out both; }
+  .lbl-log li:not(:first-child) { opacity: .72; }
+  .lbl-log .id { color: var(--muted); }
+  .lbl-log .ans { overflow: hidden; text-overflow: ellipsis; }
+  .lbl-log .ans em { font-style: normal; color: var(--muted); font-size: 11px; }
+  .lbl-log .p { text-align: right; color: var(--ink-2); }
+  .lbl-log .ok { color: var(--pass); font-weight: 700; text-align: center; }
+  .lbl-log .bad { color: var(--fail); font-weight: 700; text-align: center; }
+  .lbl-log .placeholder { color: var(--muted); font-family: var(--font-body); font-size: 12px; display: block; animation: none; opacity: 1; }
+  .lbl-stats { margin: 0; padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 9px; }
+  .lbl-stats div { border-left: 3px solid var(--lbl-a); padding-left: 9px; }
+  .lbl-stats dt { font: 650 21px/1.05 var(--font-display); font-variant-numeric: tabular-nums; }
+  .lbl-stats dd { margin: 2px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+  .lbl-stats .lbl-you { border-left-color: var(--ink-2); }
+  .lbl-fine { font: 500 10px/1.3 var(--font-mono); color: var(--muted); margin-top: auto; letter-spacing: .02em; }
+
+  /* fake cursor */
+  .lbl-cursor { position: absolute; left: 0; top: 0; width: 24px; height: 24px; pointer-events: none; z-index: 5; opacity: 0;
+    fill: var(--ink); stroke: #fff; stroke-width: 1.4; stroke-linejoin: round; filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)); will-change: transform; }
+  .lbl-ripple { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; border: 2px solid var(--lbl-a);
+    pointer-events: none; z-index: 4; animation: lbl-ripple .5s ease-out forwards; }
+  @keyframes lbl-ripple { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+
+  @media (max-width: 560px) {
+    .lbl-bar { padding: 9px 10px; }
+    .lbl-ctrls { width: 100%; }
+    .lbl-ctrls .lbl-seg { margin-left: auto; }
+    .lbl-pipe { padding: 9px 10px 8px; }
+    .lbl-pipe ol { display: flex; flex-wrap: wrap; gap: 5px 14px; }
+    .lbl-pipe li { padding: 4px 7px; }
+    .lbl-pipe li:not(:last-child)::after { content: "→"; right: -12px; top: 50%; width: auto; height: auto; background: none; transform: translateY(-50%);
+      font: 500 10px/1 var(--font-mono); color: var(--muted); }
+    .lbl-pipe b { font-size: 10.5px; overflow: visible; }
+    .lbl-pipe span { display: none; }
+    .lbl-pipe-legend { display: none; }
+    .lbl-steps li { font-size: 9.5px; padding: 3px 5px; }
+    .lbl-task { padding: 11px 10px; }
+    .lbl-answers { grid-template-columns: 1fr 1fr; }
+    .lbl-ans-wide { grid-column: 1 / -1; }
+    .lbl-chat { height: 290px; }
+    .lbl-model { padding: 11px 10px 12px; }
+    .lbl-mgrid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .lbl-wtext { min-height: calc(1.45em * 2); }
+    .lbl-foot { grid-template-columns: minmax(0, 1fr); }
+    .lbl-log { border-right: 0; border-bottom: 1px solid var(--line); padding: 10px 10px 11px; }
+    .lbl-stats { flex-direction: row; flex-wrap: wrap; gap: 10px 16px; padding: 10px 10px 12px; }
+    .lbl-fine { width: 100%; }
+  }
+  @media (max-width: 360px) {
+    .lbl-app { font-size: 12px; }
+    .lbl-pipe ol { gap: 5px 12px; }
+    .lbl-pipe b { font-size: 9.5px; }
+    .lbl-btn { padding: 7px 9px; }
+    .lbl-loghead span:last-child { display: none; }
+    .lbl-steps li { font-size: 9px; padding: 3px 4px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lbl-msg, .lbl-empty, .lbl-log li { animation: none; }
+    .lbl-status i { animation: none; }
+    .lbl-ripple { display: none; }
+  }
+</style>
+
+<script>
+  type Who = "b" | "s";
+  interface Msg { who: Who; ru: string; en: string }
+  interface Chat {
+    title: string; price: string; desc: string; descEn: string; glyph: string;
+    msgs: Msg[];
+    probs: [number, number, number]; // model output (unused when the rule fires)
+    mine: 0 | 1 | 2; // my own label
+    jitter: number; // seconds
+    note?: string;
+  }
+  const LABELS = ["Да", "Нет", "Чат неинформативный"] as const;
+  const LABELS_EN = ["Yes", "No", "Not informative"] as const;
+  const SHORT = ["Да", "Нет", "Неинформ."] as const;
+
+  // All chats are made up for the demo.
+  const CHATS: Chat[] = [
+    {
+      title: "iPhone 12, 64 GB", price: "32 000 ₽", glyph: "i",
+      desc: "Состояние хорошее, аккумулятор 86%.", descEn: "Good condition, battery at 86%.",
+      msgs: [
+        { who: "b", ru: "Здравствуйте, ещё актуально?", en: "Hi, is it still available?" },
+        { who: "s", ru: "Да, актуально", en: "Yes, it is." },
+        { who: "b", ru: "Отдадите за 30? Могу сегодня вечером забрать", en: "Would you take 30k? I can pick it up tonight." },
+        { who: "s", ru: "Давайте за 31, жду в 19:00 у метро", en: "Let's say 31k. See you at 7 pm by the metro." },
+        { who: "b", ru: "Договорились, буду", en: "Deal, I'll be there." },
+      ],
+      probs: [0.93, 0.05, 0.02], mine: 0, jitter: 1.3,
+    },
+    {
+      title: "Прогулочная коляска", price: "6 500 ₽", glyph: "К",
+      desc: "Лёгкая, складывается одной рукой.", descEn: "Light, folds with one hand.",
+      msgs: [
+        { who: "b", ru: "Добрый день! Отправите доставкой?", en: "Hello! Can you ship it?" },
+        { who: "s", ru: "Нет, только самовывоз", en: "No, pickup only." },
+        { who: "b", ru: "Жаль, я в другом городе", en: "Too bad, I'm in another city." },
+      ],
+      probs: [0.08, 0.89, 0.03], mine: 1, jitter: 0.6,
+    },
+    {
+      title: "Горный велосипед, 26\"", price: "14 000 ₽", glyph: "В",
+      desc: "Катался два сезона, новая цепь.", descEn: "Ridden for two seasons, new chain.",
+      msgs: [
+        { who: "b", ru: "Можно завтра посмотреть?", en: "Can I come and see it tomorrow?" },
+        { who: "s", ru: "Да, после 18:00", en: "Yes, after 6 pm." },
+        { who: "b", ru: "А торг возможен?", en: "Is the price negotiable?" },
+        { who: "s", ru: "Нет, цена окончательная", en: "No, the price is final." },
+        { who: "b", ru: "Понял, подумаю", en: "Got it, I'll think about it." },
+      ],
+      probs: [0.58, 0.39, 0.03], mine: 1, jitter: 1.9,
+      note: "they agreed on a viewing, not a deal",
+    },
+    {
+      title: "Диван-книжка, серый", price: "9 000 ₽", glyph: "Д",
+      desc: "Без пятен, самовывоз.", descEn: "No stains, pickup only.",
+      msgs: [
+        { who: "s", ru: "Здравствуйте! Вы добавили диван в избранное. Отдам за 8 000, если заберёте на этой неделе", en: "Hi! You saved the sofa to favourites. It's yours for 8,000 if you pick it up this week." },
+      ],
+      probs: [0, 0, 1], mine: 2, jitter: 0.4,
+    },
+    {
+      title: "PlayStation 4 Slim + 2 геймпада", price: "18 000 ₽", glyph: "P",
+      desc: "Всё работает, есть коробка.", descEn: "Everything works, original box.",
+      msgs: [
+        { who: "b", ru: "Добрый вечер. Всё исправно?", en: "Good evening. Does everything work?" },
+        { who: "s", ru: "Да, могу показать при встрече", en: "Yes, I can show you when we meet." },
+        { who: "b", ru: "Беру. Завтра в 12 удобно?", en: "I'll take it. Is tomorrow at 12 OK?" },
+        { who: "s", ru: "Удобно, адрес скину", en: "Works for me, I'll send the address." },
+      ],
+      probs: [0.95, 0.04, 0.01], mine: 0, jitter: 1.1,
+    },
+    {
+      title: "Зимняя куртка, р. 48", price: "3 500 ₽", glyph: "К",
+      desc: "Носил одну зиму.", descEn: "Worn for one winter.",
+      msgs: [
+        { who: "b", ru: "Здравствуйте, на какой рост?", en: "Hi, what height is it for?" },
+        { who: "s", ru: "На 176–182", en: "For 176–182 cm." },
+        { who: "b", ru: "Мне будет мала, спасибо", en: "It'll be too small for me, thanks." },
+      ],
+      probs: [0.06, 0.91, 0.03], mine: 1, jitter: 0.8,
+    },
+    {
+      title: "Микроволновка, б/у", price: "2 000 ₽", glyph: "М",
+      desc: "20 литров, с грилем.", descEn: "20 litres, with grill.",
+      msgs: [
+        { who: "b", ru: "Актуально?", en: "Still available?" },
+        { who: "s", ru: "Да", en: "Yes." },
+        { who: "b", ru: "Можно ваш номер?", en: "Can I get your number?" },
+        { who: "s", ru: "Позвоните, номер в профиле", en: "Give me a call, the number is in my profile." },
+      ],
+      probs: [0.61, 0.31, 0.08], mine: 2, jitter: 1.6,
+      note: "they moved to the phone, the outcome is unknown",
+    },
+    {
+      title: "Офисное кресло", price: "4 200 ₽", glyph: "О",
+      desc: "Регулируется высота, сетчатая спинка.", descEn: "Height adjustable, mesh back.",
+      msgs: [
+        { who: "b", ru: "Добрый день! Можно сегодня забрать?", en: "Hi! Can I pick it up today?" },
+        { who: "s", ru: "Можно, с 17 до 20", en: "Sure, between 5 and 8 pm." },
+        { who: "b", ru: "Отлично, буду в 18:30, наличными", en: "Great, I'll come at 6:30 and pay cash." },
+        { who: "s", ru: "Жду", en: "See you then." },
+      ],
+      probs: [0.89, 0.09, 0.02], mine: 0, jitter: 0.9,
+    },
+  ];
+
+  class Abort extends Error {}
+
+  function init(root: HTMLElement) {
+    const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector(s) as T;
+    const $$ = <T extends Element = HTMLElement>(s: string) => Array.from(root.querySelectorAll(s)) as T[];
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const el = {
+      play: $("[data-lbl-play]") as HTMLButtonElement, playLabel: $("[data-lbl-play-label]"),
+      next: $("[data-lbl-next]") as HTMLButtonElement, speeds: $$<HTMLButtonElement>("[data-lbl-speed]"),
+      stages: $$("[data-stage]"), taskId: $("[data-lbl-taskid]"), status: $("[data-lbl-status]"),
+      thumb: $("[data-lbl-thumb]"), title: $("[data-lbl-title]"), price: $("[data-lbl-price]"),
+      desc: $("[data-lbl-desc]"), descEn: $("[data-lbl-desc-en]"), chat: $("[data-lbl-chat]"),
+      answers: $$<HTMLButtonElement>("[data-ans]"), hint: $("[data-lbl-hint]"), task: $("[data-lbl-task]"),
+      model: $("[data-lbl-model]"), steps: $$("[data-step]"), check: $("[data-lbl-check]"), flat: $("[data-lbl-flat]"),
+      chips: $("[data-lbl-chips]"), tokcount: $("[data-lbl-tokcount]"), bars: $("[data-lbl-bars]"),
+      rows: $$("[data-row]"), wtext: $("[data-lbl-wtext]"), wbar: $("[data-lbl-wbar]"),
+      log: $("[data-lbl-log]"), n: $("[data-lbl-n]"), acc: $("[data-lbl-acc]"), accfrac: $("[data-lbl-accfrac]"),
+      youbox: $("[data-lbl-youbox]"), you: $("[data-lbl-you]"), cursor: $("[data-lbl-cursor]"), live: $("[data-lbl-live]"),
+    };
+
+    // ---------- clock: every wait runs on a pausable, speed-aware clock ----------
+    let speed = 1, inView = false, userPaused = false, raf = 0, last = 0;
+    interface Timer { left: number; total: number; tick?: (t: number) => void; res: () => void; rej: (e: Error) => void }
+    const timers = new Set<Timer>();
+    const running = () => inView && !userPaused && !document.hidden;
+
+    function frame(now: number) {
+      const dt = Math.min(100, now - last); last = now;
+      if (running()) {
+        for (const t of [...timers]) {
+          t.left -= dt * speed;
+          const p = Math.min(1, 1 - t.left / t.total);
+          t.tick?.(p);
+          if (t.left <= 0) { timers.delete(t); t.res(); }
+        }
+      }
+      raf = running() ? requestAnimationFrame(frame) : 0;
+    }
+    function kick() { if (!raf && running()) { last = performance.now(); raf = requestAnimationFrame(frame); } }
+    function sleep(ms: number, tick?: (t: number) => void) {
+      return new Promise<void>((res, rej) => {
+        if (ms <= 0) { tick?.(1); res(); return; }
+        timers.add({ left: ms, total: ms, tick, res, rej }); kick();
+      });
+    }
+    // visual tween: instant under reduced motion, but keeps a short hold for pacing
+    const tween = (ms: number, fn: (t: number) => void) => reduced ? (fn(1), sleep(ms * 0.4)) : sleep(ms, fn);
+    function abortAll() { for (const t of timers) t.rej(new Abort()); timers.clear(); }
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+    const easeIO = (t: number) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+    // ---------- UI helpers ----------
+    function setStatus(text: string, kind: "" | "warn" | "ok" | "bad" = "") {
+      el.status.className = "lbl-status" + (kind ? " is-" + kind : "") + (userPaused ? " is-paused" : "");
+      (el.status.lastElementChild as HTMLElement).textContent = userPaused ? "paused" : text;
+      el.status.dataset.text = text; el.status.dataset.kind = kind;
+    }
+    function setStage(id: string | null) { el.stages.forEach((s) => s.classList.toggle("is-on", s.dataset.stage === id)); }
+    function setStep(id: string | null, skipped: string[] = []) {
+      let passed = true;
+      el.steps.forEach((s) => {
+        const k = s.dataset.step!;
+        if (k === id) passed = false;
+        s.classList.toggle("is-on", k === id);
+        s.classList.toggle("is-skip", skipped.includes(k));
+        s.classList.toggle("is-done", id !== null && passed && k !== id && !skipped.includes(k));
+      });
+    }
+    const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+    function addMsg(m: Msg) {
+      const d = document.createElement("div");
+      d.className = "lbl-msg is-" + m.who;
+      d.innerHTML = `<span class="lbl-who">${m.who === "b" ? "Покупатель · buyer" : "Продавец · seller"}</span>` +
+        `<div class="lbl-bub"><span class="ru" lang="ru">${esc(m.ru)}</span><span class="lbl-en">${esc(m.en)}</span></div>`;
+      el.chat.appendChild(d);
+      el.chat.scrollTop = el.chat.scrollHeight;
+    }
+    function flatText(c: Chat) {
+      return `Описание: ${c.title} ${c.desc} | Чат: ` + c.msgs.map((m) => `${m.who === "b" ? "Покупатель" : "Продавец"}: ${m.ru};`).join(" ");
+    }
+    function flatHTML(s: string, caret: boolean) {
+      const h = esc(s).replace(/(Описание:|Чат:|Покупатель:|Продавец:|\|)/g, '<span class="k">$1</span>');
+      return h + (caret ? '<span class="caret"></span>' : "");
+    }
+    // Rough WordPiece-like split, for illustration only.
+    function fakeTokens(text: string) {
+      const out: { t: string; c: string }[] = [{ t: "[CLS]", c: "sp" }];
+      const parts = text.match(/[\p{L}\d]+|[^\s\p{L}\d]/gu) || [];
+      for (const w of parts) {
+        if (w.length <= 6) { out.push({ t: w.toLowerCase(), c: "" }); continue; }
+        out.push({ t: w.slice(0, 4).toLowerCase(), c: "" });
+        for (let i = 4; i < w.length; i += 4) out.push({ t: "##" + w.slice(i, i + 4).toLowerCase(), c: "sub" });
+      }
+      out.push({ t: "[SEP]", c: "sp" });
+      return out;
+    }
+    function resetModel() {
+      el.check.textContent = "—"; el.flat.innerHTML = ""; el.flat.classList.remove("is-skip");
+      el.chips.innerHTML = ""; el.tokcount.textContent = "0 / 512";
+      el.bars.classList.remove("is-skip"); el.model.classList.remove("is-rule");
+      el.rows.forEach((r) => { r.classList.remove("is-top"); (r.querySelector("i") as HTMLElement).style.width = "0"; r.querySelector(".lbl-bval")!.textContent = "0.00"; });
+      el.wtext.innerHTML = "human-like wait: 15 s × length factor + jitter"; el.wbar.style.width = "0";
+      setStep(null);
+    }
+    function resetAnswers() {
+      el.answers.forEach((b) => {
+        b.className = b.className.replace(/\s?is-(pred|pressed|chosen|wrong|mine|guess)/g, "");
+        const tag = b.querySelector("[data-tag]") as HTMLElement; tag.className = "lbl-tag"; tag.textContent = "";
+      });
+    }
+    function tag(i: number, text: string, mine = false) {
+      const t = el.answers[i].querySelector("[data-tag]") as HTMLElement;
+      t.textContent = text; t.className = "lbl-tag is-on" + (mine ? " is-mine" : "");
+    }
+    function relPos(node: Element) {
+      const r = node.getBoundingClientRect(), o = root.getBoundingClientRect();
+      return { x: r.left - o.left + r.width / 2, y: r.top - o.top + r.height / 2 };
+    }
+    function placeCursor(x: number, y: number) { el.cursor.style.transform = `translate(${x - 5}px, ${y - 3}px)`; }
+
+    // ---------- stats ----------
+    let taskNo = 412, labeled = 0, agree = 0, guesses = 0, guessHits = 0;
+    let guess: number | null = null, locked = true;
+    function renderStats() {
+      el.n.textContent = String(labeled);
+      el.acc.textContent = labeled ? Math.round((agree / labeled) * 100) + "%" : "–";
+      el.accfrac.textContent = labeled ? `(${agree}/${labeled})` : "";
+      if (guesses) { el.youbox.hidden = false; el.you.textContent = `${guessHits}/${guesses}`; }
+    }
+    function logLine(id: string, ans: number, p: number | null, ok: boolean, mine: number) {
+      el.log.querySelector(".placeholder")?.remove();
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="id">${id}</span><span class="ans" lang="ru">${SHORT[ans]}${ok ? "" : ` <em>· mine: ${SHORT[mine]}</em>`}</span>` +
+        `<span class="p">${p === null ? "rule" : p.toFixed(2)}</span><span class="${ok ? "ok" : "bad"}" aria-label="${ok ? "matches my label" : "differs from my label"}">${ok ? "✓" : "✗"}</span>`;
+      el.log.prepend(li);
+      while (el.log.children.length > 6) el.log.lastElementChild!.remove();
+    }
+    el.log.innerHTML = '<li class="placeholder">No tasks yet. The bot starts when this is on screen.</li>';
+
+    // user guesses
+    el.answers.forEach((b) => b.addEventListener("click", () => {
+      if (locked) return;
+      const i = Number(b.dataset.ans);
+      guess = i;
+      el.answers.forEach((x) => x.classList.toggle("is-guess", x === b));
+      el.answers.forEach((x, j) => { if (j !== i) { const t = x.querySelector("[data-tag]") as HTMLElement; t.className = "lbl-tag"; } });
+      tag(i, "your guess");
+      el.hint.textContent = `Your guess: ${LABELS[i]} (${LABELS_EN[i]}). Let's see what the bot says.`;
+    }));
+
+    // ---------- one task ----------
+    async function round(c: Chat, instant: boolean) {
+      taskNo++;
+      const id = "#" + String(taskNo).padStart(4, "0");
+      guess = null; locked = false;
+      resetModel(); resetAnswers();
+      el.hint.textContent = "Tap an answer to guess before the bot does.";
+      el.taskId.textContent = id;
+      el.thumb.textContent = c.glyph;
+      el.title.textContent = c.title; el.price.textContent = "— " + c.price;
+      el.desc.textContent = c.desc; el.descEn.textContent = c.descEn;
+      el.chat.innerHTML = "";
+      el.cursor.style.opacity = "0";
+      setStage("sel"); setStep("scrape"); setStatus("loading task");
+      const buyers = c.msgs.filter((m) => m.who === "b").length, sellers = c.msgs.length - buyers;
+
+      // 1. the chat appears (Selenium reads it)
+      if (instant) c.msgs.forEach(addMsg);
+      else { await sleep(350); for (const m of c.msgs) { addMsg(m); await sleep(reduced ? 250 : 520); } }
+      if (buyers === 0 || sellers === 0) {
+        const e = document.createElement("div"); e.className = "lbl-empty";
+        e.textContent = buyers === 0 ? "the buyer never replied · покупатель не ответил" : "the seller never replied · продавец не ответил";
+        el.chat.appendChild(e); el.chat.scrollTop = el.chat.scrollHeight;
+      }
+      setStatus("reading chat");
+      el.check.innerHTML = `scraped <b>${c.msgs.length}</b> message${c.msgs.length > 1 ? "s" : ""} · buyer <b>${buyers}</b> · seller <b>${sellers}</b>`;
+      await sleep(700);
+
+      // 2. rule check
+      setStep("rule");
+      const rule = buyers === 0 || sellers === 0;
+      let pred: number, p: number | null;
+      if (rule) {
+        setStatus("rule fired", "warn");
+        el.check.innerHTML = `${buyers === 0 ? "buyer" : "seller"} messages = <b>0</b> → <span class="is-warn">rule: skip model → «Чат неинформативный»</span>`;
+        el.flat.classList.add("is-skip"); el.flat.textContent = "// not needed: one side never wrote anything";
+        el.bars.classList.add("is-skip"); el.model.classList.add("is-rule");
+        setStep("rule");
+        await sleep(2300);
+        pred = 2; p = null;
+        setStep("wait", ["flat", "tok", "pred"]);
+      } else {
+        el.check.innerHTML = `buyer <b>${buyers}</b> · seller <b>${sellers}</b> → both sides wrote → <b>run model</b>`;
+        await sleep(650);
+
+        // 3. flatten into the training format
+        setStep("flat"); setStage("csv"); setStatus("flattening");
+        const text = flatText(c);
+        await tween(1400, (t) => { const n = Math.round(ease(t) * text.length); el.flat.innerHTML = flatHTML(text.slice(0, n), t < 1); });
+        el.flat.innerHTML = flatHTML(text, false);
+        await sleep(250);
+
+        // 4. tokenize
+        setStep("tok"); setStage("bert"); setStatus("tokenizing");
+        const toks = fakeTokens(text);
+        let shown = 0;
+        await tween(1000, (t) => {
+          const want = Math.round(t * toks.length);
+          while (shown < want) {
+            const tk = toks[shown++];
+            const s = document.createElement("span"); s.className = "lbl-chip " + tk.c; s.textContent = tk.t;
+            el.chips.appendChild(s);
+          }
+          el.tokcount.textContent = `${want} / 512`;
+        });
+        while (shown < toks.length) { const tk = toks[shown++]; const s = document.createElement("span"); s.className = "lbl-chip " + tk.c; s.textContent = tk.t; el.chips.appendChild(s); }
+        el.tokcount.textContent = `${toks.length} / 512`;
+        // trim to what fits, with a "+N" chip
+        const box = el.chips.getBoundingClientRect();
+        const kids = Array.from(el.chips.children) as HTMLElement[];
+        const hidden = kids.filter((k) => k.getBoundingClientRect().top >= box.bottom - 2);
+        if (hidden.length) {
+          hidden.forEach((k) => k.remove());
+          const more = document.createElement("span"); more.className = "lbl-chip more"; el.chips.appendChild(more);
+          let n = hidden.length;
+          more.textContent = `+${n}`;
+          while (more.getBoundingClientRect().top >= box.bottom - 2 && el.chips.children.length > 2) {
+            more.previousElementSibling!.remove(); n++; more.textContent = `+${n}`;
+          }
+        }
+        await sleep(300);
+
+        // 5. predict
+        setStep("pred"); setStatus("predicting");
+        await tween(950, (t) => {
+          const e = ease(t);
+          el.rows.forEach((r, i) => {
+            (r.querySelector("i") as HTMLElement).style.width = (c.probs[i] * e * 100).toFixed(1) + "%";
+            r.querySelector(".lbl-bval")!.textContent = (c.probs[i] * e).toFixed(2);
+          });
+        });
+        pred = c.probs.indexOf(Math.max(...c.probs)); p = c.probs[pred];
+        el.rows[pred].classList.add("is-top");
+        await sleep(350);
+        setStep("wait");
+      }
+
+      // highlight the predicted answer, then the human-like wait
+      el.answers[pred].classList.add("is-pred");
+      tag(pred, "bot's pick");
+      if (guess === pred) tag(pred, "bot's pick · your guess");
+      setStage("sel"); setStatus("waiting like a human");
+      const len = rule ? c.msgs.map((m) => m.ru).join(" ").length : flatText(c).length;
+      const factor = Math.min(2.5, Math.max(0.6, len / 160));
+      const total = 15 * factor + c.jitter;
+      const rest = () => `human-like wait: 15 s × ${factor.toFixed(2)} <span>(length)</span> + ${c.jitter.toFixed(1)} s jitter`;
+      await sleep(total * 100, (t) => {
+        el.wbar.style.width = (t * 100).toFixed(1) + "%";
+        el.wtext.innerHTML = `${rest()} = <b>${(total * (1 - t)).toFixed(1)} s</b> left <span>(×${10 * speed} speed)</span>`;
+      });
+      el.wtext.innerHTML = `${rest()} = <b>${total.toFixed(1)} s</b> ✓`;
+
+      // 6. cursor moves and clicks
+      setStep("click", rule ? ["flat", "tok", "pred"] : []); setStatus("clicking");
+      locked = true;
+      const from = relPos(rule ? el.check : el.rows[pred]);
+      const to = relPos(el.answers[pred]);
+      to.x += 10; to.y += 4;
+      placeCursor(from.x, from.y);
+      el.cursor.style.opacity = "1";
+      await tween(850, (t) => { const e = easeIO(t); placeCursor(from.x + (to.x - from.x) * e, from.y + (to.y - from.y) * e - Math.sin(e * Math.PI) * 30); });
+      placeCursor(to.x, to.y);
+      el.answers[pred].classList.add("is-pressed");
+      if (!reduced) { const r = document.createElement("span"); r.className = "lbl-ripple"; r.style.left = to.x + "px"; r.style.top = to.y + "px"; root.appendChild(r); setTimeout(() => r.remove(), 600); }
+      await sleep(180);
+      const ok = pred === c.mine;
+      el.answers[pred].classList.remove("is-pressed", "is-pred");
+      el.answers[pred].classList.add("is-chosen");
+      if (!ok) el.answers[pred].classList.add("is-wrong");
+
+      // 7. compare with my own label
+      labeled++; if (ok) agree++;
+      if (guess !== null) { guesses++; if (guess === c.mine) guessHits++; }
+      renderStats();
+      logLine(id, pred, p, ok, c.mine);
+      setStep(null, rule ? ["flat", "tok", "pred"] : []);
+      el.steps.forEach((s) => { s.classList.remove("is-on"); if (!(rule && ["flat", "tok", "pred"].includes(s.dataset.step!))) s.classList.add("is-done"); });
+      if (ok) {
+        tag(c.mine, "matches my label", true);
+        setStatus(rule ? "done by rule ✓" : "matches my label ✓", "ok");
+      } else {
+        el.answers[c.mine].classList.add("is-mine");
+        tag(c.mine, "my label", true);
+        tag(pred, "bot ✗");
+        setStatus("model was wrong ✗", "bad");
+      }
+      const guessTxt = guess === null ? "" : guess === c.mine ? " Your guess matched my label." : ` Your guess didn't match: I labeled it ${LABELS[c.mine]} (${LABELS_EN[c.mine]}).`;
+      el.hint.textContent = (ok ? (rule ? "The rule handled it, no model needed." : `The bot agrees with the label I gave this chat.`) :
+        `The bot was wrong here: ${c.note ?? "it misread the chat"}.`) + guessTxt;
+      el.live.textContent = `Task ${id}: bot answered ${LABELS_EN[pred]}${p === null ? " by rule" : ` with p ${p.toFixed(2)}`}; my label was ${LABELS_EN[c.mine]}. ${ok ? "Match." : "Mismatch."}`;
+      await sleep(400);
+      el.cursor.style.opacity = "0";
+      await sleep(ok ? 1800 : 3600);
+    }
+
+    // ---------- loop ----------
+    let idx = 0, instantNext = true;
+    async function loop() {
+      for (;;) {
+        try { const inst = instantNext; instantNext = false; await round(CHATS[idx], inst); }
+        catch (e) { if (!(e instanceof Abort)) { console.error(e); return; } }
+        idx = (idx + 1) % CHATS.length;
+      }
+    }
+
+    // ---------- controls ----------
+    function syncPlay() {
+      el.play.setAttribute("aria-pressed", String(userPaused));
+      el.playLabel.textContent = userPaused ? "Play" : "Pause";
+      el.play.setAttribute("aria-label", userPaused ? "Play the demo" : "Pause the demo");
+      setStatus(el.status.dataset.text || "ready", (el.status.dataset.kind || "") as "");
+      kick();
+    }
+    el.play.addEventListener("click", () => { userPaused = !userPaused; syncPlay(); });
+    el.next.addEventListener("click", () => { instantNext = true; abortAll(); });
+    el.speeds.forEach((b) => b.addEventListener("click", () => {
+      speed = Number(b.dataset.lblSpeed);
+      el.speeds.forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    }));
+    document.addEventListener("visibilitychange", kick);
+    new IntersectionObserver((ents) => {
+      for (const e of ents) inView = e.isIntersecting && (e.intersectionRatio >= 0.25 || e.intersectionRect.height >= window.innerHeight * 0.35);
+      kick();
+    }, { threshold: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5] }).observe(root);
+
+    syncPlay();
+    loop();
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-lbl-root]").forEach((r) => { if (!r.dataset.lblReady) { r.dataset.lblReady = "1"; init(r); } });
+</script>

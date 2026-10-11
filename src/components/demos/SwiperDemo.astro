@@ -1,5 +1,1273 @@
 ---
-// Placeholder: replaced by the real interactive demo.
+// Swiper: a playable browser remake of the core loop of Ruslan's 2021 Android game.
+// Canvas 2D, no images or audio. Rules follow the original C# (MouseMovement, GameController, Player).
 ---
-<div class="ph">SwiperDemo</div>
-<style>.ph{aspect-ratio:4/3;border:2px dashed var(--line);border-radius:var(--radius);display:grid;place-items:center;font-family:var(--font-mono);color:var(--muted)}</style>
+<div class="swp" data-swiper>
+  <div class="swp-stage">
+    <canvas class="swp-canvas" role="img" aria-label="Swiper game field: asteroids fall toward a city skyline. Drag or swipe across them to destroy them."></canvas>
+
+    <div class="swp-hud" aria-hidden="true">
+      <div class="swp-hud-row">
+        <div class="swp-stat">
+          <span class="swp-k">Score</span>
+          <span class="swp-v" data-score>0</span>
+        </div>
+        <div class="swp-stat swp-wave">
+          <span class="swp-k">Wave <b data-wave>1</b></span>
+          <span class="swp-prog"><i data-prog></i></span>
+          <span class="swp-sub" data-kills>0 / 15</span>
+        </div>
+        <div class="swp-stat swp-right">
+          <span class="swp-k">Best</span>
+          <span class="swp-v" data-best>0</span>
+        </div>
+      </div>
+      <div class="swp-hp">
+        <span class="swp-k">City</span>
+        <span class="swp-hpbar"><i data-hpfill></i></span>
+        <span class="swp-hpnum" data-hp>100</span>
+      </div>
+      <div class="swp-chips" data-chips></div>
+    </div>
+
+    <!-- Start -->
+    <div class="swp-ov swp-start" data-ov="start">
+      <div class="swp-card">
+        <p class="swp-eyebrow">Browser remake · 2021 Android game</p>
+        <h3 class="swp-title">Swiper</h3>
+        <p class="swp-how">Swipe through falling asteroids before they reach the city. Hit three or more in one swipe for a streak.</p>
+        <button type="button" class="swp-btn" data-play>
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M6 4l10 6-10 6z" fill="currentColor"/></svg>
+          Play
+        </button>
+        <p class="swp-mini" data-startbest hidden></p>
+      </div>
+    </div>
+
+    <!-- Paused -->
+    <div class="swp-ov swp-paused" data-ov="pause" hidden>
+      <button type="button" class="swp-resume" data-resume>
+        <span class="swp-pauseicon" aria-hidden="true"><i></i><i></i></span>
+        <span>Paused <span class="swp-dash">—</span> tap to resume</span>
+      </button>
+    </div>
+
+    <!-- Bonus choice -->
+    <div class="swp-ov swp-bonus" data-ov="bonus" hidden>
+      <div class="swp-card swp-bonuscard" role="group" aria-labelledby="swp-bonus-h">
+        <p class="swp-eyebrow" data-cleared>Wave 1 cleared</p>
+        <h3 class="swp-bh" id="swp-bonus-h">Choose a bonus</h3>
+        <div class="swp-opts" data-opts></div>
+        <div class="swp-timer" aria-hidden="true"><i data-btimer></i></div>
+        <p class="swp-mini">Keys <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> · bonus lasts 15 s</p>
+      </div>
+    </div>
+
+    <!-- Game over -->
+    <div class="swp-ov swp-over" data-ov="over" hidden>
+      <div class="swp-card">
+        <p class="swp-eyebrow">The city has fallen</p>
+        <h3 class="swp-title swp-title-sm">Game over</h3>
+        <p class="swp-final" data-final>0</p>
+        <p class="swp-newbest" data-newbest hidden>New best score</p>
+        <dl class="swp-res">
+          <div><dt>Wave reached</dt><dd data-rwave>1</dd></div>
+          <div><dt>Best streak</dt><dd data-rstreak>0</dd></div>
+          <div><dt>Best score</dt><dd data-rbest>0</dd></div>
+        </dl>
+        <button type="button" class="swp-btn" data-again>
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M15.5 6.5A6.5 6.5 0 1 0 16.5 11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M16.8 2.6v4.6h-4.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Play again
+        </button>
+      </div>
+    </div>
+  </div>
+  <p class="swp-foot"><span>Drag or swipe to cut</span><span><kbd>P</kbd> pause</span><span>Scoring and bonuses follow the original C#</span></p>
+  <p class="sr-only" aria-live="polite" data-live></p>
+</div>
+
+<style is:global>
+  /* global (all selectors prefixed .swp) because bonus options and chips are created at runtime */
+  .swp { --coral: var(--accent, #ff7a59); --night: #0d1024; --glass: rgba(14, 17, 42, .72); color: #e8e9f5; }
+  .swp-stage {
+    position: relative;
+    width: min(100%, 480px, calc(72vh * .75));
+    aspect-ratio: 3 / 4;
+    margin: 0 auto;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--night);
+    box-shadow: 0 0 0 1px #262b52, 0 30px 80px -30px rgba(255, 122, 89, .35), 0 20px 60px -20px rgba(0, 0, 0, .6);
+    isolation: isolate;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @supports (height: 1svh) { .swp-stage { width: min(100%, 480px, calc(72svh * .75)); } }
+  .swp-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+
+  /* HUD */
+  .swp[data-state=start] .swp-hud { opacity: 0; }
+  .swp-hud { transition: opacity .3s; }
+  .swp-hud { position: absolute; inset: 0 0 auto 0; padding: 12px 14px 0; pointer-events: none; font-family: var(--font-mono); z-index: 2; }
+  .swp-hud-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 8px; }
+  .swp-stat { display: grid; gap: 2px; }
+  .swp-right { text-align: right; }
+  .swp-k { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #8d92bd; }
+  .swp-k b { color: #fff; font-weight: 700; }
+  .swp-v { font: 650 20px/1.05 var(--font-display); color: #fff; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .swp-right .swp-v { color: #b9bde0; font-size: 16px; padding-top: 3px; }
+  .swp-wave { justify-items: center; text-align: center; }
+  .swp-prog { width: 92px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .1); overflow: hidden; margin-top: 4px; }
+  .swp-prog i { display: block; height: 100%; width: 0; background: var(--coral); border-radius: inherit; box-shadow: 0 0 8px var(--coral); transition: width .2s; }
+  .swp-sub { font-size: 10px; color: #8d92bd; font-variant-numeric: tabular-nums; }
+  .swp-hp { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .swp-hpbar { flex: 1; height: 5px; border-radius: 5px; background: rgba(255, 255, 255, .09); overflow: hidden; }
+  .swp-hpbar i { display: block; height: 100%; width: 100%; border-radius: inherit; background: #7d8cff; transition: width .25s, background-color .25s; }
+  .swp-hpnum { font-size: 11px; color: #fff; min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .swp-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; min-height: 22px; }
+  .swp-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 7px; border-radius: 999px;
+    font: 600 10.5px/1.4 var(--font-mono); letter-spacing: .04em; color: #fff;
+    background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .14);
+  }
+  .swp-chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--c, var(--coral)); box-shadow: 0 0 8px var(--c, var(--coral)); }
+  .swp-chip.blink { animation: swp-blink .5s steps(2) infinite; }
+  @keyframes swp-blink { 50% { opacity: .35; } }
+
+  /* Overlays */
+  .swp-ov { position: absolute; inset: 0; display: grid; place-items: center; padding: 18px; z-index: 3; }
+  .swp-ov[hidden] { display: none; }
+  .swp-start { background: linear-gradient(180deg, rgba(13, 16, 36, .35), rgba(13, 16, 36, .7) 60%, rgba(13, 16, 36, .5)); }
+  .swp-over, .swp-bonus { background: rgba(9, 11, 28, .6); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+  .swp-card { text-align: center; max-width: 330px; width: 100%; display: grid; justify-items: center; gap: 10px; }
+  .swp-eyebrow { font: 600 10.5px/1.3 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--coral); }
+  .swp-title {
+    font: 700 clamp(48px, 15vw, 72px)/.9 var(--font-display); letter-spacing: -.045em; margin: 2px 0 2px;
+    background: linear-gradient(180deg, #fff 30%, #ffc2ad); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 22px rgba(255, 122, 89, .45));
+  }
+  .swp-title-sm { font-size: clamp(36px, 10vw, 48px); }
+  .swp-how { font-size: 14px; line-height: 1.5; color: #c6c9e6; max-width: 30ch; }
+  .swp-btn {
+    margin-top: 6px; display: inline-flex; align-items: center; gap: 8px; padding: 13px 26px; border-radius: 999px; border: 0;
+    font: 650 16px/1 var(--font-body); color: #1b0d08; background: var(--coral); cursor: pointer;
+    box-shadow: 0 0 0 0 rgba(255, 122, 89, .5), 0 10px 30px -8px rgba(255, 122, 89, .7);
+    transition: transform .15s, box-shadow .2s;
+  }
+  .swp-btn:hover { transform: translateY(-1px); box-shadow: 0 0 0 6px rgba(255, 122, 89, .18), 0 14px 34px -8px rgba(255, 122, 89, .8); }
+  .swp-btn:focus-visible, .swp-opt:focus-visible, .swp-resume:focus-visible { outline: 2.5px solid #fff; outline-offset: 3px; }
+  .swp-mini { font: 500 11px/1.4 var(--font-mono); color: #8d92bd; }
+  .swp-mini b { color: #fff; }
+  .swp kbd {
+    font: 600 10px/1 var(--font-mono); padding: 2px 5px; border-radius: 4px; color: #e8e9f5;
+    background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .16);
+  }
+
+  .swp-paused { background: rgba(9, 11, 28, .55); padding: 0; z-index: 4; }
+  .swp-resume {
+    all: unset; box-sizing: border-box; position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px;
+    cursor: pointer; font: 600 15px/1.3 var(--font-body); color: #fff; text-align: center;
+  }
+  .swp-pauseicon { display: flex; gap: 7px; padding: 18px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .35); }
+  .swp-pauseicon i { width: 6px; height: 22px; border-radius: 2px; background: #fff; }
+  .swp-dash { color: var(--coral); }
+
+  .swp-bh { font: 650 26px/1.1 var(--font-display); color: #fff; letter-spacing: -.02em; margin-bottom: 4px; }
+  .swp-opts { display: grid; gap: 8px; width: 100%; }
+  .swp-opt {
+    display: grid; grid-template-columns: 22px 38px 1fr; align-items: center; gap: 10px; text-align: left; width: 100%;
+    padding: 10px 12px; border-radius: 14px; cursor: pointer; color: #fff;
+    background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .12);
+    font: inherit; transition: background .15s, border-color .15s, transform .15s;
+    animation: swp-in .35s cubic-bezier(.2, .9, .3, 1.2) both;
+  }
+  .swp-opt:nth-child(2) { animation-delay: .06s; }
+  .swp-opt:nth-child(3) { animation-delay: .12s; }
+  @keyframes swp-in { from { opacity: 0; transform: translateY(10px) scale(.97); } }
+  .swp-opt:hover { background: rgba(255, 255, 255, .1); border-color: var(--c); transform: translateY(-1px); }
+  .swp-opt .n { font: 600 11px/1 var(--font-mono); color: #8d92bd; text-align: center; border: 1px solid rgba(255, 255, 255, .16); border-radius: 5px; padding: 4px 0; }
+  .swp-opt .ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
+  .swp-opt .t { display: grid; gap: 2px; }
+  .swp-opt strong { font: 650 15px/1.2 var(--font-display); }
+  .swp-opt small { font-size: 12px; line-height: 1.35; color: #aeb2d6; }
+  .swp-timer { width: 100%; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, .1); overflow: hidden; margin-top: 4px; }
+  .swp-timer i { display: block; height: 100%; width: 100%; background: var(--coral); transform-origin: left; }
+
+  .swp-final { font: 700 54px/1 var(--font-display); color: #fff; letter-spacing: -.03em; font-variant-numeric: tabular-nums; text-shadow: 0 0 28px rgba(255, 122, 89, .5); }
+  .swp-newbest { font: 600 11px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: #1b0d08; background: #ffd166; padding: 5px 9px; border-radius: 999px; }
+  .swp-newbest[hidden] { display: none; }
+  .swp-res { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; margin: 6px 0 4px; }
+  .swp-res div { padding: 9px 4px; border-radius: 12px; background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .1); }
+  .swp-res dt { font: 500 9.5px/1.2 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: #8d92bd; }
+  .swp-res dd { margin: 4px 0 0; font: 650 18px/1 var(--font-display); color: #fff; font-variant-numeric: tabular-nums; }
+
+  .swp-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; margin-top: 14px; font: 500 11.5px/1.5 var(--font-mono); color: var(--muted, #a1a5c4); }
+  .swp-foot span + span::before { content: "·"; margin-right: 16px; color: #3a3f6e; }
+  @media (max-width: 480px) {
+    .swp-foot span:last-child { display: none; }
+    .swp-hud { padding: 10px 11px 0; }
+    .swp-v { font-size: 18px; }
+    .swp-card { gap: 8px; }
+    .swp-opt { padding: 8px 10px; grid-template-columns: 20px 34px 1fr; }
+    .swp-opt .ic { width: 34px; height: 34px; }
+    .swp-opt small { font-size: 11.5px; }
+    .swp-final { font-size: 44px; }
+  }
+  @media (max-width: 340px) {
+    .swp-bh { font-size: 21px; }
+    .swp-opt small { display: none; }
+    .swp-res dd { font-size: 16px; }
+    .swp-res dt { font-size: 8.5px; letter-spacing: .04em; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .swp-opt { animation: none; }
+    .swp-chip.blink { animation: none; }
+    .swp-btn, .swp-opt { transition: none; }
+  }
+</style>
+
+<script>
+  type Pt = { x: number; y: number };
+  type BonusKey = "heal" | "big" | "double" | "mirror";
+
+  interface Rock {
+    x: number; y: number; vx: number; vy: number; r: number; scale: number;
+    rot: number; vr: number; hp: number; maxHp: number; defended: boolean;
+    shape: number[]; craters: { a: number; d: number; s: number }[]; pal: number;
+    flash: number; inMain: boolean; inMirror: boolean; doom: number; dead: boolean;
+  }
+  interface Particle {
+    x: number; y: number; vx: number; vy: number; life: number; max: number; size: number;
+    color: string; kind: "spark" | "shard" | "ring" | "smoke" | "flash"; rot?: number; vr?: number; add?: boolean;
+  }
+  interface Popup { x: number; y: number; text: string; age: number; color: string; big?: boolean }
+  interface Ghost { pts: Pt[]; mpts: Pt[] | null; age: number; width: number; color: string; mcolor: string }
+  interface Building { x: number; w: number; h: number; steps: number; antenna: boolean; windows: { x: number; y: number; t: number; ph: number }[]; sink: number; delay: number }
+
+  const W = 360;
+  const H = 480;
+  const GROUND = H - 10;
+  const LINE_LIFE = 0.5; // seconds, as in MouseMovement.timeToLive
+  const BONUS_TIME = 15;
+  const PANEL_TIME = 9; // the original bonus panel was on screen for 9 s
+  const BEST_KEY = "licman-swiper-best";
+
+  const PALETTES = [
+    { base: "#6a6f9f", shade: "#3f4270", rim: "#a7acdf", crater: "#4c5084" },
+    { base: "#8f6d66", shade: "#56403d", rim: "#d1a89c", crater: "#6b504c" },
+  ];
+  const DEF_PAL = { base: "#5d6a8c", shade: "#323b58", rim: "#bfe9ff", crater: "#45506f" };
+  const SHIELD = "#7fd8ff";
+
+  const BONUSES: Record<BonusKey, { name: string; desc: string; color: string; icon: string }> = {
+    heal: {
+      name: "Heal", desc: "Restore 10 city HP", color: "#5ee0a0",
+      icon: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
+    },
+    big: {
+      name: "Bigger Line", desc: "Wider line, 10 damage per hit", color: "#ffd166",
+      icon: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 17C8 9 14 15 20 6" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>',
+    },
+    double: {
+      name: "Double Points", desc: "Every kill scores ×2", color: "#ff7a59",
+      icon: '<svg viewBox="0 0 24 24" width="22" height="22"><text x="12" y="17" text-anchor="middle" font-family="Space Grotesk Variable, sans-serif" font-weight="700" font-size="14" fill="currentColor">×2</text></svg>',
+    },
+    mirror: {
+      name: "Mirror Line", desc: "A second line, mirrored left↔right", color: "#b49bff",
+      icon: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3v18" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2 2.5" opacity=".6"/><path d="M3 17c2-5 4-7 6-10M21 17c-2-5-4-7-6-10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
+    },
+  };
+
+  function initSwiper(root: HTMLElement) {
+    const stage = root.querySelector<HTMLElement>(".swp-stage")!;
+    const canvas = root.querySelector<HTMLCanvasElement>(".swp-canvas")!;
+    const ctx = canvas.getContext("2d")!;
+    const $ = <T extends HTMLElement = HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
+    const ov = {
+      start: $("[data-ov=start]"), pause: $("[data-ov=pause]"), bonus: $("[data-ov=bonus]"), over: $("[data-ov=over]"),
+    };
+    const hud = {
+      score: $("[data-score]"), wave: $("[data-wave]"), prog: $("[data-prog]"), kills: $("[data-kills]"),
+      best: $("[data-best]"), hp: $("[data-hp]"), hpfill: $("[data-hpfill]"), chips: $("[data-chips]"),
+    };
+    const live = $("[data-live]");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const accent = getComputedStyle(root).getPropertyValue("--accent").trim() || "#ff7a59";
+    const fontDisplay = getComputedStyle(root).getPropertyValue("--font-display").trim() || "system-ui, sans-serif";
+    const fontMono = getComputedStyle(root).getPropertyValue("--font-mono").trim() || "ui-monospace, monospace";
+
+    // ---------- persistent best ----------
+    let best = 0;
+    try { best = parseInt(localStorage.getItem(BEST_KEY) || "0", 10) || 0; } catch { best = 0; }
+    const saveBest = () => { try { localStorage.setItem(BEST_KEY, String(best)); } catch { /* storage unavailable */ } };
+
+    // ---------- rng ----------
+    const rand = (a: number, b: number) => a + Math.random() * (b - a);
+    function seeded(seed: number) {
+      return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+    }
+
+    // ---------- stars ----------
+    const starRng = seeded(7);
+    const stars = Array.from({ length: 110 }, () => {
+      const layer = starRng() < 0.6 ? 0 : starRng() < 0.75 ? 1 : 2;
+      return { x: starRng() * W, y: starRng() * H, layer, s: [0.6, 1, 1.6][layer], tw: starRng() * Math.PI * 2, sp: 0.6 + starRng() * 1.8 };
+    });
+
+    // ---------- city ----------
+    let buildings: Building[] = [];
+    function buildCity() {
+      const r = seeded(2021);
+      buildings = [];
+      let x = -6;
+      let i = 0;
+      while (x < W + 6) {
+        const w = 18 + Math.floor(r() * 26);
+        const tall = r() < 0.2;
+        const h = tall ? 70 + r() * 36 : 26 + r() * 46;
+        const b: Building = { x, w, h, steps: r() < 0.3 ? 1 : 0, antenna: tall && r() < 0.8, windows: [], sink: 0, delay: 0 };
+        const cols = Math.floor((w - 6) / 6);
+        const rows = Math.floor((h - 12) / 8);
+        const offX = (w - cols * 6) / 2 + 1.5;
+        for (let c = 0; c < cols; c++) for (let rr = 0; rr < rows; rr++) {
+          b.windows.push({ x: x + offX + c * 6, y: GROUND - h + 9 + rr * 8, t: r(), ph: r() * 10 });
+        }
+        buildings.push(b);
+        x += w + (r() < 0.25 ? 2 + Math.floor(r() * 4) : 0);
+        i++;
+      }
+    }
+    buildCity();
+    function roofAt(x: number) {
+      let top = GROUND;
+      for (const b of buildings) if (x >= b.x && x <= b.x + b.w) top = Math.min(top, GROUND - b.h + b.sink);
+      return top;
+    }
+
+    // ---------- state ----------
+    type State = "start" | "play" | "clear" | "bonus" | "dying" | "over";
+    let state: State = "start";
+    let paused = false;
+    let inView = false;
+    let score = 0, wave = 1, hp = 100, kills = 0, need = 15, totalKills = 0, bestStreak = 0;
+    let spawnT = 1, cooldown = 1.2, waveIntro = 0, stateT = 0, panelT = 0;
+    let defendAt = new Set<number>();
+    let rocks: Rock[] = [];
+    let parts: Particle[] = [];
+    let pops: Popup[] = [];
+    let ghosts: Ghost[] = [];
+    let shake = 0, hurt = 0, time = 0;
+    let streak = { n: 0, age: 9, live: false };
+    const timers: Record<BonusKey, number> = { heal: 0, big: 0, double: 0, mirror: 0 };
+    let offered: BonusKey[] = [];
+
+    // swipe
+    let pointerId: number | null = null;
+    let swipe: { pts: Pt[]; age: number; kills: number } | null = null;
+    let lastPt: Pt | null = null;
+
+    const needFor = (w: number) => 15 + 5 * (w - 1);
+    const gravMult = () => 1 + 0.08 * (wave - 1);
+
+    // ---------- sizing ----------
+    let dpr = 1, cssW = 0, cssH = 0;
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      cssW = rect.width; cssH = rect.height;
+      dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      drawFrame();
+    }
+    new ResizeObserver(resize).observe(stage);
+
+    // ---------- spawning ----------
+    function makeRock(x: number, scale: number, defended: boolean): Rock {
+      const n = 9 + Math.floor(Math.random() * 3);
+      const shape = Array.from({ length: n }, () => rand(0.8, 1.06));
+      const r = (defended ? 19 : 15) * scale;
+      const craters = Array.from({ length: 2 + Math.floor(Math.random() * 2) }, () => ({ a: rand(0, 6.28), d: rand(0.15, 0.5), s: rand(0.14, 0.26) }));
+      return {
+        x, y: -r - 4, vx: rand(-55, 55), vy: rand(10, 40), r, scale, rot: rand(0, 6.28), vr: rand(-1.4, 1.4),
+        hp: defended ? 3 : 1, maxHp: defended ? 3 : 1, defended, shape, craters, pal: Math.random() < 0.5 ? 0 : 1,
+        flash: 0, inMain: false, inMirror: false, doom: -1, dead: false,
+      };
+    }
+    function spawn() {
+      if (rocks.length > 16) return;
+      const burstChance = Math.min(0.32, (kills >= 4 || wave > 1) ? 0.1 + 0.04 * wave : 0);
+      if (Math.random() < burstChance) {
+        // a small cluster: the natural way to land a 3+ streak
+        const cx = rand(60, W - 60);
+        const vx = rand(-35, 35);
+        const count = 3 + (Math.random() < 0.25 + 0.05 * wave ? 1 : 0);
+        for (let i = 0; i < count; i++) {
+          const rk = makeRock(cx + (i - (count - 1) / 2) * rand(26, 34), rand(0.72, 0.9), false);
+          rk.vx = vx + rand(-8, 8); rk.vy = rand(15, 25); rk.y -= rand(0, 30);
+          rocks.push(rk);
+        }
+      } else {
+        const scale = rand(0.75, 1.25);
+        rocks.push(makeRock(rand(24, W - 24), scale, false));
+      }
+    }
+    function spawnDefended() { rocks.push(makeRock(rand(40, W - 40), rand(1.0, 1.15), true)); }
+
+    // ---------- game flow ----------
+    function setupWave(w: number) {
+      need = needFor(w);
+      kills = 0;
+      cooldown = 1.2 * Math.pow(0.88, w - 1);
+      spawnT = 1.4;
+      waveIntro = 1.8;
+      defendAt = new Set();
+      const count = Math.max(1, Math.round(need * 0.04));
+      while (defendAt.size < count) defendAt.add(2 + Math.floor(Math.random() * (need - 4)));
+    }
+    function newGame() {
+      score = 0; wave = 1; hp = 100; totalKills = 0; bestStreak = 0;
+      rocks = []; parts = []; pops = []; ghosts = []; swipe = null; shake = 0; hurt = 0;
+      streak = { n: 0, age: 9, live: false };
+      (Object.keys(timers) as BonusKey[]).forEach((k) => (timers[k] = 0));
+      buildCity();
+      setupWave(1);
+      state = "play";
+      showOverlay(null);
+      announce("Wave 1. Destroy 15 asteroids.");
+      updateHud(true);
+      start();
+    }
+    function waveCleared() {
+      state = "clear";
+      stateT = 0;
+      endSwipe();
+      rocks.forEach((r, i) => { if (!r.dead) r.doom = 0.08 + i * 0.07; });
+      announce(`Wave ${wave} cleared.`);
+    }
+    function openBonus() {
+      state = "bonus";
+      panelT = PANEL_TIME;
+      const keys = (Object.keys(BONUSES) as BonusKey[]).sort(() => Math.random() - 0.5).slice(0, 3);
+      offered = keys;
+      $("[data-cleared]").textContent = `Wave ${wave} cleared`;
+      const opts = $("[data-opts]");
+      opts.innerHTML = "";
+      keys.forEach((k, i) => {
+        const b = BONUSES[k];
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "swp-opt";
+        btn.style.setProperty("--c", b.color);
+        btn.innerHTML = `<span class="n" aria-hidden="true">${i + 1}</span><span class="ic" aria-hidden="true">${b.icon}</span><span class="t"><strong>${b.name}</strong><small>${b.desc}</small></span>`;
+        btn.setAttribute("aria-label", `${i + 1}: ${b.name}. ${b.desc}.`);
+        btn.addEventListener("click", () => pickBonus(k));
+        opts.appendChild(btn);
+      });
+      showOverlay("bonus");
+      announce(`Wave ${wave} cleared. Choose a bonus: ${keys.map((k, i) => `${i + 1}, ${BONUSES[k].name}`).join("; ")}.`);
+      const first = opts.querySelector<HTMLButtonElement>("button");
+      if (inView && first && root.contains(document.activeElement)) first.focus({ preventScroll: true });
+    }
+    function pickBonus(k: BonusKey | null) {
+      if (state !== "bonus") return;
+      if (k) {
+        if (k === "heal") {
+          hp = Math.min(100, hp + 10);
+          pops.push({ x: W / 2, y: GROUND - 70, text: "+10 HP", age: 0, color: BONUSES.heal.color, big: true });
+          for (let i = 0; i < 26; i++) parts.push({ x: rand(0, W), y: GROUND - rand(0, 40), vx: rand(-10, 10), vy: rand(-60, -20), life: 0, max: rand(0.6, 1.1), size: rand(1.2, 2.4), color: BONUSES.heal.color, kind: "spark", add: true });
+        } else {
+          timers[k] = BONUS_TIME;
+        }
+        announce(`${BONUSES[k].name} activated.`);
+      }
+      wave++;
+      setupWave(wave);
+      state = "play";
+      showOverlay(null);
+      updateHud(true);
+      if (root.contains(document.activeElement)) (document.activeElement as HTMLElement).blur();
+      start();
+    }
+    function cityDestroyed() {
+      state = "dying";
+      stateT = 0;
+      endSwipe();
+      buildings.forEach((b) => (b.delay = Math.random() * 0.9));
+      announce("The city has fallen.");
+    }
+    function gameOver() {
+      state = "over";
+      const isBest = score > best;
+      if (isBest) { best = score; saveBest(); }
+      $("[data-final]").textContent = fmt(score);
+      $("[data-rwave]").textContent = String(wave);
+      $("[data-rstreak]").textContent = bestStreak >= 3 ? `×${bestStreak}` : "—";
+      $("[data-rbest]").textContent = fmt(best);
+      $("[data-newbest]").hidden = !(isBest && score > 0);
+      showOverlay("over");
+      updateHud(true);
+      announce(`Game over. Score ${score}. Wave ${wave}.${isBest && score > 0 ? " New best score." : ""}`);
+      const again = $<HTMLButtonElement>("[data-again]");
+      if (inView) again.focus({ preventScroll: true });
+      stop();
+      drawFrame();
+    }
+
+    function showOverlay(name: "start" | "pause" | "bonus" | "over" | null) {
+      ov.start.hidden = name !== "start";
+      ov.bonus.hidden = name !== "bonus";
+      ov.over.hidden = name !== "over";
+      ov.pause.hidden = name !== "pause";
+    }
+    function announce(msg: string) { live.textContent = msg; }
+    const fmt = (n: number) => n.toLocaleString("en-US");
+
+    // ---------- pause ----------
+    const active = () => state === "play" || state === "clear" || state === "bonus" || state === "dying";
+    function pause() {
+      if (paused || !active()) return;
+      paused = true;
+      endSwipe();
+      stop();
+      showOverlay("pause");
+      announce("Paused.");
+      updateHud(true);
+      drawFrame();
+    }
+    function resume() {
+      if (!paused) return;
+      paused = false;
+      showOverlay(state === "bonus" ? "bonus" : null);
+      announce("Resumed.");
+      updateHud(true);
+      start();
+    }
+
+    // ---------- swipe ----------
+    function toWorld(e: PointerEvent): Pt {
+      const rect = canvas.getBoundingClientRect();
+      return { x: ((e.clientX - rect.left) / rect.width) * W, y: ((e.clientY - rect.top) / rect.height) * H };
+    }
+    const canSwipe = () => !paused && (state === "play" || state === "clear");
+    function beginSwipe(p: Pt) {
+      swipe = { pts: [p], age: 0, kills: 0 };
+      streak.live = false;
+      for (const r of rocks) { r.inMain = false; r.inMirror = false; }
+    }
+    function endSwipe() {
+      if (swipe && swipe.pts.length > 1) {
+        const lw = lineWidth(swipe.kills);
+        ghosts.push({ pts: swipe.pts, mpts: timers.mirror > 0 ? swipe.pts.map(mirror) : null, age: 0, width: lw, color: lineColor(swipe.kills), mcolor: BONUSES.mirror.color });
+      }
+      swipe = null;
+      streak.live = false;
+    }
+    const mirror = (p: Pt): Pt => ({ x: W - p.x, y: p.y });
+    function lineWidth(k: number) {
+      const base = timers.big > 0 ? 6.5 : 3.4;
+      return base * Math.min(3, Math.max(1, k));
+    }
+    function lineColor(k: number) {
+      if (timers.big > 0) return "#ffd166";
+      return k > 0 ? "#ffb26b" : accent;
+    }
+
+    canvas.addEventListener("pointerdown", (e) => {
+      if (!canSwipe() || pointerId !== null) return;
+      e.preventDefault();
+      pointerId = e.pointerId;
+      try { canvas.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+      const p = toWorld(e);
+      lastPt = p;
+      beginSwipe(p);
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      if (e.pointerId !== pointerId) return;
+      const evs = typeof e.getCoalescedEvents === "function" ? e.getCoalescedEvents() : [e];
+      for (const ev of evs.length ? evs : [e]) {
+        const p = toWorld(ev);
+        lastPt = p;
+        if (!swipe) { if (canSwipe()) beginSwipe(p); continue; }
+        const l = swipe.pts[swipe.pts.length - 1];
+        if (Math.hypot(p.x - l.x, p.y - l.y) > 2.2) swipe.pts.push(p);
+      }
+    });
+    const release = (e: PointerEvent) => {
+      if (e.pointerId !== pointerId) return;
+      pointerId = null;
+      lastPt = null;
+      endSwipe();
+    };
+    canvas.addEventListener("pointerup", release);
+    canvas.addEventListener("pointercancel", release);
+    canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+    // ---------- collisions ----------
+    function distToPolyline(px: number, py: number, pts: Pt[]) {
+      let best = Infinity;
+      if (pts.length === 1) return Math.hypot(px - pts[0].x, py - pts[0].y);
+      for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1], b = pts[i];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const len2 = dx * dx + dy * dy || 1;
+        let t = ((px - a.x) * dx + (py - a.y) * dy) / len2;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const d = Math.hypot(px - (a.x + t * dx), py - (a.y + t * dy));
+        if (d < best) best = d;
+      }
+      return best;
+    }
+    function hitRock(r: Rock) {
+      if (!swipe) return;
+      const dmg = timers.big > 0 ? 10 : 1;
+      r.hp -= dmg;
+      r.flash = 1;
+      if (r.hp > 0) {
+        // shield segment pops
+        burst(r.x, r.y, SHIELD, 10, 70, 1.6);
+        parts.push({ x: r.x, y: r.y, vx: 0, vy: 0, life: 0, max: 0.3, size: r.r + 8, color: SHIELD, kind: "ring", add: true });
+        return;
+      }
+      swipe.kills++;
+      const n = swipe.kills;
+      const mult = timers.double > 0 ? 2 : 1;
+      const pts = (n > 2 ? 5 * n : 10) * mult;
+      score += pts;
+      kills++;
+      totalKills++;
+      if (n >= 3) { streak = { n, age: 0, live: true }; streakBump = 1; bestStreak = Math.max(bestStreak, n); }
+      pops.push({ x: Math.min(W - 20, Math.max(20, r.x)), y: Math.max(100, r.y - r.r - 4), text: `+${pts}`, age: 0, color: n >= 3 ? "#ffd166" : "#fff" });
+      killRock(r, true);
+      if (defendAt.has(kills)) spawnDefended();
+      if (kills >= need && state === "play") waveCleared();
+    }
+    function killRock(r: Rock, scored: boolean) {
+      r.dead = true;
+      const pal = r.defended ? DEF_PAL : PALETTES[r.pal];
+      const many = reduced.matches ? 0.6 : 1;
+      for (let i = 0; i < Math.round(9 * many * r.scale + 3); i++) {
+        const a = rand(0, 6.28), s = rand(30, 140) * (0.7 + r.scale * 0.4);
+        parts.push({ x: r.x + Math.cos(a) * r.r * 0.4, y: r.y + Math.sin(a) * r.r * 0.4, vx: Math.cos(a) * s + r.vx * 0.3, vy: Math.sin(a) * s + r.vy * 0.3, life: 0, max: rand(0.5, 0.9), size: rand(2, 4.5) * r.scale, color: Math.random() < 0.5 ? pal.base : pal.rim, kind: "shard", rot: rand(0, 6), vr: rand(-8, 8) });
+      }
+      burst(r.x, r.y, scored ? accent : "#ffb26b", Math.round(14 * many), 160, 2);
+      burst(r.x, r.y, "#ffe3a3", Math.round(6 * many), 90, 1.4);
+      parts.push({ x: r.x, y: r.y, vx: 0, vy: 0, life: 0, max: 0.35, size: r.r * 2.6, color: accent, kind: "ring", add: true });
+      parts.push({ x: r.x, y: r.y, vx: 0, vy: 0, life: 0, max: 0.18, size: r.r * 2.2, color: "#fff1dc", kind: "flash", add: true });
+    }
+    function burst(x: number, y: number, color: string, n: number, speed: number, size: number) {
+      for (let i = 0; i < n; i++) {
+        const a = rand(0, 6.28), s = rand(speed * 0.3, speed);
+        parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0, max: rand(0.25, 0.6), size: rand(size * 0.6, size * 1.3), color, kind: "spark", add: true });
+      }
+    }
+    function cityHit(r: Rock, top: number) {
+      r.dead = true;
+      const dmg = r.defended ? 10 : Math.round(4 + 4 * (r.scale - 0.75));
+      hp = Math.max(0, hp - dmg);
+      hurt = 1;
+      if (!reduced.matches) shake = Math.min(10, shake + 4 + r.scale * 3);
+      burst(r.x, top, "#ff6b4a", 18, 170, 2.2);
+      burst(r.x, top, "#ffd166", 8, 110, 1.6);
+      for (let i = 0; i < 8; i++) parts.push({ x: r.x + rand(-8, 8), y: top - rand(0, 6), vx: rand(-20, 20), vy: rand(-40, -15), life: 0, max: rand(0.9, 1.6), size: rand(5, 10), color: "rgba(60,52,80,1)", kind: "smoke" });
+      parts.push({ x: r.x, y: top, vx: 0, vy: 0, life: 0, max: 0.4, size: 46, color: "#ff6b4a", kind: "ring", add: true });
+      pops.push({ x: r.x, y: top - 14, text: `−${dmg}`, age: 0, color: "#ff8f7a" });
+      if (hp <= 0) cityDestroyed();
+    }
+
+    // ---------- update ----------
+    function update(dt: number) {
+      time += dt;
+      stateT += dt;
+      if (hurt > 0) hurt = Math.max(0, hurt - dt * 3);
+      if (shake > 0) shake = Math.max(0, shake - dt * 30);
+
+      if (state === "play") {
+        for (const k of ["big", "double", "mirror"] as BonusKey[]) if (timers[k] > 0) timers[k] = Math.max(0, timers[k] - dt);
+        if (waveIntro > 0) waveIntro -= dt;
+        else {
+          spawnT -= dt;
+          if (spawnT <= 0) { spawn(); spawnT = cooldown * rand(0.45, 1.2); }
+        }
+      }
+      if (state === "clear" && stateT > 1.4 && rocks.length === 0) openBonus();
+      if (state === "bonus") {
+        panelT -= dt;
+        const bar = $("[data-btimer]");
+        bar.style.transform = `scaleX(${Math.max(0, panelT / PANEL_TIME)})`;
+        if (panelT <= 0) { announce("No bonus chosen."); pickBonus(null); }
+      }
+      if (state === "dying") {
+        for (const b of buildings) if (stateT > b.delay) {
+          if (b.sink === 0) {
+            const bx = b.x + b.w / 2, by = GROUND - b.h;
+            burst(bx, by + b.h * 0.4, "#ff6b4a", 16, 190, 2.4);
+            burst(bx, by + b.h * 0.4, "#ffd166", 10, 120, 1.8);
+            parts.push({ x: bx, y: by + b.h * 0.4, vx: 0, vy: 0, life: 0, max: 0.5, size: b.w * 2, color: "#ff7a59", kind: "ring", add: true });
+            for (let i = 0; i < 4; i++) parts.push({ x: bx + rand(-6, 6), y: by + rand(0, 20), vx: rand(-14, 14), vy: rand(-36, -12), life: 0, max: rand(1.4, 2.2), size: rand(8, 15), color: "rgba(60,52,80,1)", kind: "smoke" });
+            if (!reduced.matches) shake = Math.min(12, shake + 2.5);
+            b.sink = 0.01;
+          }
+          b.sink = Math.min(b.h + 4, b.sink + dt * (30 + b.h * 0.6));
+        }
+        if (stateT > 2.6) { gameOver(); return; }
+      }
+
+      // swipe lifetime: like the original, a held swipe restarts every 0.5 s (and its combo resets)
+      if (swipe) {
+        swipe.age += dt;
+        if (swipe.age >= LINE_LIFE) {
+          const p = lastPt;
+          endSwipe();
+          if (p && pointerId !== null && canSwipe()) beginSwipe(p);
+        }
+      }
+
+      // rocks
+      const g = 62 * gravMult();
+      const maxV = 200 + 14 * wave;
+      for (const r of rocks) {
+        if (r.dead) continue;
+        r.vy = Math.min(maxV, r.vy + g * r.scale * dt);
+        r.x += r.vx * dt;
+        r.y += r.vy * dt;
+        r.rot += r.vr * dt;
+        if (r.flash > 0) r.flash = Math.max(0, r.flash - dt * 5);
+        if (r.x < r.r) { r.x = r.r; r.vx = Math.abs(r.vx); }
+        if (r.x > W - r.r) { r.x = W - r.r; r.vx = -Math.abs(r.vx); }
+        if (r.doom >= 0) { r.doom -= dt; if (r.doom < 0) { killRock(r, false); continue; } }
+
+        if (swipe && swipe.pts.length && (state === "play" || state === "clear") && r.doom < 0) {
+          const half = lineWidth(swipe.kills) / 2 + (timers.big > 0 ? 4 : 2);
+          const touching = distToPolyline(r.x, r.y, swipe.pts) < r.r + half;
+          if (touching && !r.inMain) hitRock(r);
+          r.inMain = touching;
+          if (!r.dead && timers.mirror > 0 && swipe) {
+            const mp = swipe.pts.map(mirror);
+            const mt = distToPolyline(r.x, r.y, mp) < r.r + half;
+            if (mt && !r.inMirror) hitRock(r);
+            r.inMirror = mt;
+          }
+        }
+        if (r.dead) continue;
+        const top = roofAt(r.x);
+        if (r.y + r.r * 0.6 >= top) {
+          if (state === "play") cityHit(r, top);
+          else killRock(r, false);
+        }
+      }
+      rocks = rocks.filter((r) => !r.dead);
+
+      // particles
+      for (const p of parts) {
+        p.life += dt;
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        if (p.kind === "shard") { p.vy += 220 * dt; p.vx *= 0.99; p.rot! += p.vr! * dt; }
+        else if (p.kind === "spark") { p.vx *= 0.93; p.vy = p.vy * 0.93 + 30 * dt; }
+        else if (p.kind === "smoke") { p.vx *= 0.98; p.size += dt * 8; }
+      }
+      parts = parts.filter((p) => p.life < p.max);
+      if (parts.length > 700) parts.splice(0, parts.length - 700);
+
+      // low-HP smoke
+      if (state === "play" && hp < 45 && Math.random() < dt * (45 - hp) * 0.12) {
+        const b = buildings[Math.floor(Math.random() * buildings.length)];
+        parts.push({ x: b.x + rand(3, b.w - 3), y: GROUND - b.h, vx: rand(-6, 6), vy: rand(-22, -12), life: 0, max: rand(1.6, 2.6), size: rand(4, 7), color: "rgba(70,58,88,1)", kind: "smoke" });
+      }
+
+      for (const p of pops) p.age += dt;
+      pops = pops.filter((p) => p.age < 1.1);
+      for (const gh of ghosts) gh.age += dt;
+      ghosts = ghosts.filter((gh) => gh.age < 0.22);
+      if (!streak.live) streak.age += dt;
+
+      updateHud(false);
+    }
+
+    // ---------- HUD ----------
+    const last: Record<string, string> = {};
+    function setText(el: HTMLElement, key: string, v: string) { if (last[key] !== v) { last[key] = v; el.textContent = v; } }
+    let chipT = 0;
+    function updateHud(force: boolean) {
+      const st = paused ? "paused" : state;
+      if (root.dataset.state !== st) root.dataset.state = st;
+      setText(hud.score, "s", fmt(score));
+      setText(hud.wave, "w", String(wave));
+      setText(hud.kills, "k", `${Math.min(kills, need)} / ${need}`);
+      setText(hud.best, "b", fmt(Math.max(best, score)));
+      setText(hud.hp, "h", String(Math.ceil(hp)));
+      const pw = `${Math.min(100, (kills / need) * 100)}%`;
+      if (last.pw !== pw) { last.pw = pw; hud.prog.style.width = pw; }
+      const hw = `${hp}%`;
+      if (last.hw !== hw) { last.hw = hw; hud.hpfill.style.width = hw; hud.hpfill.style.backgroundColor = cityColor(1, 0.85); }
+      chipT -= 1;
+      if (force || chipT <= 0) {
+        chipT = 10;
+        const html = (["big", "double", "mirror"] as BonusKey[]).filter((k) => timers[k] > 0).map((k) => {
+          const blink = timers[k] < 3 ? " blink" : "";
+          return `<span class="swp-chip${blink}" style="--c:${BONUSES[k].color}"><i></i>${BONUSES[k].name} ${Math.ceil(timers[k])}s</span>`;
+        }).join("");
+        if (last.chips !== html) { last.chips = html; hud.chips.innerHTML = html; }
+      }
+    }
+
+    // ---------- colours ----------
+    function hex(c: string) { const n = parseInt(c.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+    function mix(a: string, b: string, t: number, alpha = 1) {
+      const A = hex(a), B = hex(b);
+      return `rgba(${Math.round(A[0] + (B[0] - A[0]) * t)},${Math.round(A[1] + (B[1] - A[1]) * t)},${Math.round(A[2] + (B[2] - A[2]) * t)},${alpha})`;
+    }
+    // full-health colour → low-health colour, like Player.ChangeColorDependOnHP
+    function cityColor(kind: 0 | 1, alpha = 1) {
+      const t = 1 - hp / 100;
+      return kind === 0 ? mix("#1d2452", "#4a1420", t, alpha) : mix("#7d8cff", "#ff4d4d", t, alpha);
+    }
+
+    // ---------- drawing ----------
+    function drawFrame() {
+      if (!cssW) return;
+      const sx = (cssW * dpr) / W, sy = (cssH * dpr) / H;
+      ctx.setTransform(sx, 0, 0, sy, 0, 0);
+      drawSky();
+      let ox = 0, oy = 0;
+      if (shake > 0) { ox = rand(-shake, shake) * 0.5; oy = rand(-shake, shake) * 0.5; }
+      ctx.setTransform(sx, 0, 0, sy, ox * sx, oy * sy);
+      drawStars();
+      drawRocks();
+      drawCity();
+      drawParticles();
+      drawGhosts();
+      if (swipe) drawSwipe();
+      drawPops();
+      ctx.setTransform(sx, 0, 0, sy, 0, 0);
+      if (!paused) { drawStreak(); drawBanner(); }
+      if (hurt > 0) {
+        const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.75);
+        g.addColorStop(0, "rgba(255,60,60,0)");
+        g.addColorStop(1, `rgba(255,60,60,${0.32 * hurt})`);
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+
+    function drawSky() {
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, "#080a1c");
+      g.addColorStop(0.55, "#121538");
+      g.addColorStop(0.85, "#2a1a45");
+      g.addColorStop(1, "#3d1d3d");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      // horizon glow from the city lights, tinted by city health
+      const hg = ctx.createRadialGradient(W / 2, GROUND + 30, 10, W / 2, GROUND + 30, 260);
+      hg.addColorStop(0, hp > 0 ? mix("#ff7a59", "#ff3b3b", 1 - hp / 100, 0.32) : "rgba(255,90,60,.25)");
+      hg.addColorStop(1, "rgba(255,122,89,0)");
+      ctx.fillStyle = hg;
+      ctx.fillRect(0, 0, W, H);
+      // moon
+      ctx.save();
+      ctx.globalAlpha = 0.9;
+      const mx = W - 62, my = 108;
+      const mg = ctx.createRadialGradient(mx, my, 6, mx, my, 60);
+      mg.addColorStop(0, "rgba(255,226,200,.18)");
+      mg.addColorStop(1, "rgba(255,226,200,0)");
+      ctx.fillStyle = mg;
+      ctx.beginPath(); ctx.arc(mx, my, 60, 0, 7); ctx.fill();
+      ctx.fillStyle = "#f6e6d6";
+      ctx.beginPath(); ctx.arc(mx, my, 15, 0, 7); ctx.fill();
+      ctx.fillStyle = "#121538";
+      ctx.beginPath(); ctx.arc(mx + 7, my - 4, 14, 0, 7); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawStars() {
+      const drift = reduced.matches ? 0 : time;
+      for (const s of stars) {
+        const speed = [3, 7, 13][s.layer];
+        const y = (s.y + drift * speed) % H;
+        const tw = 0.55 + 0.45 * Math.sin(s.tw + time * s.sp);
+        ctx.globalAlpha = (s.layer === 0 ? 0.45 : s.layer === 1 ? 0.7 : 0.95) * tw;
+        ctx.fillStyle = s.layer === 2 ? "#ffe9dc" : "#c9cdf5";
+        ctx.fillRect(s.x, y, s.s, s.s);
+        if (s.layer === 2) { ctx.globalAlpha *= 0.3; ctx.fillRect(s.x - 1.5, y + s.s / 2 - 0.3, s.s + 3, 0.6); ctx.fillRect(s.x + s.s / 2 - 0.3, y - 1.5, 0.6, s.s + 3); }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function rockPath(r: Rock, scale = 1) {
+      const n = r.shape.length;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const a = r.rot + (i / n) * Math.PI * 2;
+        const rr = r.r * r.shape[i] * scale;
+        const x = r.x + Math.cos(a) * rr, y = r.y + Math.sin(a) * rr;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.closePath();
+    }
+
+    function drawRocks() {
+      // entry trails
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (const r of rocks) {
+        const sp = Math.hypot(r.vx, r.vy);
+        if (sp < 60) continue;
+        const len = Math.min(70, sp * 0.22) * r.scale;
+        const ux = -r.vx / sp, uy = -r.vy / sp;
+        const g = ctx.createLinearGradient(r.x, r.y, r.x + ux * len, r.y + uy * len);
+        const a = Math.min(0.5, (sp - 60) / 300);
+        g.addColorStop(0, `rgba(255,140,90,${a})`);
+        g.addColorStop(1, "rgba(255,90,60,0)");
+        ctx.fillStyle = g;
+        const px = -uy * r.r * 0.75, py = ux * r.r * 0.75;
+        ctx.beginPath();
+        ctx.moveTo(r.x + px, r.y + py);
+        ctx.lineTo(r.x + ux * len, r.y + uy * len);
+        ctx.lineTo(r.x - px, r.y - py);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+
+      for (const r of rocks) {
+        const pal = r.defended ? DEF_PAL : PALETTES[r.pal];
+        ctx.save();
+        rockPath(r);
+        ctx.fillStyle = pal.base;
+        ctx.fill();
+        ctx.clip();
+        // shadow crescent (light from upper-left, independent of spin)
+        ctx.fillStyle = pal.shade;
+        ctx.beginPath(); ctx.arc(r.x + r.r * 0.45, r.y + r.r * 0.5, r.r * 1.05, 0, 7); ctx.fill();
+        for (const c of r.craters) {
+          const cx = r.x + Math.cos(c.a + r.rot) * r.r * c.d, cy = r.y + Math.sin(c.a + r.rot) * r.r * c.d;
+          ctx.fillStyle = pal.crater;
+          ctx.beginPath(); ctx.arc(cx, cy, r.r * c.s, 0, 7); ctx.fill();
+          ctx.fillStyle = "rgba(255,255,255,.12)";
+          ctx.beginPath(); ctx.arc(cx - r.r * c.s * 0.3, cy - r.r * c.s * 0.3, r.r * c.s * 0.55, 0, 7); ctx.fill();
+        }
+        if (r.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${r.flash * 0.85})`; ctx.fillRect(r.x - r.r * 2, r.y - r.r * 2, r.r * 4, r.r * 4); }
+        ctx.restore();
+        rockPath(r);
+        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = pal.rim;
+        ctx.globalAlpha = 0.55;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        if (r.defended) {
+          const R = r.r + 6;
+          const seg = (Math.PI * 2) / r.maxHp;
+          ctx.save();
+          ctx.lineCap = "round";
+          ctx.shadowColor = SHIELD;
+          ctx.shadowBlur = 10;
+          for (let i = 0; i < r.maxHp; i++) {
+            const a0 = time * 1.6 + i * seg + 0.18, a1 = a0 + seg - 0.36;
+            ctx.strokeStyle = i < r.hp ? SHIELD : "rgba(127,216,255,.16)";
+            ctx.lineWidth = i < r.hp ? 2.6 : 1.4;
+            ctx.beginPath(); ctx.arc(r.x, r.y, R, a0, a1); ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
+    }
+
+    function drawCity() {
+      const body = cityColor(0);
+      const rim = cityColor(1);
+      const lit = hp / 100;
+      // back layer: faint distant skyline
+      ctx.fillStyle = mix("#141a40", "#2a0f1a", 1 - lit, 1);
+      for (let i = 0; i < buildings.length; i++) {
+        const b = buildings[i];
+        const h = b.h * 0.55 + 18;
+        ctx.fillRect(b.x + b.w * 0.4, GROUND - h + b.sink * 0.6, b.w * 0.9, h);
+      }
+      for (const b of buildings) {
+        const top = GROUND - b.h + b.sink;
+        if (top >= GROUND) continue;
+        ctx.fillStyle = body;
+        ctx.fillRect(b.x, top, b.w, GROUND - top);
+        if (b.steps) ctx.fillRect(b.x + b.w * 0.25, top - 6, b.w * 0.5, 6);
+        // rim light on roof edges
+        ctx.fillStyle = rim;
+        ctx.globalAlpha = 0.85;
+        ctx.fillRect(b.x, top, b.w, 1.2);
+        if (b.steps) ctx.fillRect(b.x + b.w * 0.25, top - 6, b.w * 0.5, 1.2);
+        ctx.globalAlpha = 0.25;
+        ctx.fillRect(b.x, top, 1, GROUND - top);
+        ctx.globalAlpha = 1;
+        if (b.antenna) {
+          const ax = b.x + b.w / 2;
+          ctx.strokeStyle = body; ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.moveTo(ax, top); ctx.lineTo(ax, top - 16); ctx.stroke();
+          const on = Math.sin(time * 3 + b.x) > 0.2;
+          if (on) {
+            ctx.fillStyle = "#ff5a5a";
+            ctx.shadowColor = "#ff5a5a"; ctx.shadowBlur = 8;
+            ctx.beginPath(); ctx.arc(ax, top - 17, 1.6, 0, 7); ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+        }
+        // windows: fewer stay lit as HP drops
+        const threshold = 0.25 + 0.55 * lit;
+        for (const w of b.windows) {
+          const wy = w.y + b.sink;
+          if (wy >= GROUND - 2) continue;
+          if (w.t > threshold) continue;
+          const flick = hp < 40 && Math.sin(time * 9 + w.ph * 5) > 0.92 ? 0.25 : 1;
+          ctx.globalAlpha = (0.55 + 0.45 * Math.sin(w.ph)) * flick;
+          ctx.fillStyle = w.t < 0.1 ? "#ffe9b0" : w.t < 0.2 ? "#9fd6ff" : "#ffc977";
+          ctx.fillRect(w.x, wy, 2.6, 3.4);
+        }
+        ctx.globalAlpha = 1;
+      }
+      // ground
+      ctx.fillStyle = "#07081a";
+      ctx.fillRect(0, GROUND, W, H - GROUND);
+      ctx.fillStyle = rim;
+      ctx.globalAlpha = 0.35;
+      ctx.fillRect(0, GROUND, W, 1);
+      ctx.globalAlpha = 1;
+    }
+
+    function drawParticles() {
+      for (const p of parts) {
+        const t = p.life / p.max;
+        if (p.kind === "smoke") {
+          ctx.globalAlpha = 0.45 * (1 - t);
+          ctx.fillStyle = p.color;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, 7); ctx.fill();
+        }
+      }
+      for (const p of parts) {
+        const t = p.life / p.max;
+        if (p.kind === "shard") {
+          ctx.globalAlpha = 1 - t * t;
+          ctx.fillStyle = p.color;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot!);
+          ctx.beginPath(); ctx.moveTo(-p.size, -p.size * 0.5); ctx.lineTo(p.size * 0.8, -p.size * 0.7); ctx.lineTo(p.size * 0.3, p.size * 0.7); ctx.closePath(); ctx.fill();
+          ctx.restore();
+        }
+      }
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (const p of parts) {
+        const t = p.life / p.max;
+        if (p.kind === "spark") {
+          ctx.globalAlpha = 1 - t;
+          ctx.strokeStyle = p.color; ctx.lineWidth = p.size * (1 - t * 0.5); ctx.lineCap = "round";
+          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.035, p.y - p.vy * 0.035); ctx.stroke();
+        } else if (p.kind === "ring") {
+          ctx.globalAlpha = (1 - t) * 0.8;
+          ctx.strokeStyle = p.color; ctx.lineWidth = 2.5 * (1 - t) + 0.5;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (0.25 + t * 0.75) * 0.5, 0, 7); ctx.stroke();
+        } else if (p.kind === "flash") {
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+          g.addColorStop(0, `rgba(255,241,220,${0.9 * (1 - t)})`);
+          g.addColorStop(1, "rgba(255,160,100,0)");
+          ctx.globalAlpha = 1; ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, 7); ctx.fill();
+        }
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    function strokeLine(pts: Pt[], width: number, color: string, alpha: number, taper: boolean) {
+      if (pts.length < 2) {
+        ctx.globalAlpha = alpha; ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, width * 0.6, 0, 7); ctx.fill();
+        ctx.globalAlpha = 1;
+        return;
+      }
+      ctx.save();
+      ctx.lineCap = "round"; ctx.lineJoin = "round";
+      const path = () => { ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); };
+      // soft outer glow
+      ctx.shadowColor = color; ctx.shadowBlur = 6 + width * 2.2;
+      ctx.globalAlpha = 0.55 * alpha;
+      ctx.strokeStyle = color; ctx.lineWidth = width * 0.8;
+      path(); ctx.stroke();
+      ctx.shadowBlur = 0;
+      // body: tapered toward the oldest end, drawn in a few chunks so joints stay seamless
+      const n = pts.length;
+      const chunks = taper ? Math.min(6, n - 1) : 1;
+      ctx.globalAlpha = alpha;
+      for (let c = 0; c < chunks; c++) {
+        const i0 = Math.floor((c * (n - 1)) / chunks), i1 = Math.floor(((c + 1) * (n - 1)) / chunks);
+        const k = taper ? 0.4 + 0.6 * ((c + 1) / chunks) : 1;
+        ctx.strokeStyle = color; ctx.lineWidth = width * k;
+        ctx.beginPath(); ctx.moveTo(pts[i0].x, pts[i0].y);
+        for (let i = i0 + 1; i <= i1; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.stroke();
+      }
+      // hot core
+      ctx.globalAlpha = 0.95 * alpha;
+      ctx.strokeStyle = "#fff6ee"; ctx.lineWidth = Math.max(1, width * 0.3);
+      path(); ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawSwipe() {
+      if (!swipe) return;
+      const w = lineWidth(swipe.kills);
+      // fade a little near the end of its 0.5 s life
+      const a = swipe.age > LINE_LIFE - 0.12 ? Math.max(0.3, (LINE_LIFE - swipe.age) / 0.12) : 1;
+      strokeLine(swipe.pts, w, lineColor(swipe.kills), a, true);
+      if (timers.mirror > 0) {
+        const blink = timers.mirror < 3 && Math.sin(time * 18) < 0 ? 0.35 : 1;
+        strokeLine(swipe.pts.map(mirror), w, BONUSES.mirror.color, a * blink, true);
+      }
+      // fingertip
+      const tip = swipe.pts[swipe.pts.length - 1];
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      const g = ctx.createRadialGradient(tip.x, tip.y, 0, tip.x, tip.y, w * 3 + 6);
+      g.addColorStop(0, "rgba(255,240,225,.8)");
+      g.addColorStop(1, "rgba(255,122,89,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(tip.x, tip.y, w * 3 + 6, 0, 7); ctx.fill();
+      ctx.restore();
+    }
+    function drawGhosts() {
+      for (const gh of ghosts) {
+        const a = 1 - gh.age / 0.22;
+        strokeLine(gh.pts, gh.width * (0.6 + 0.4 * a), gh.color, a * 0.7, true);
+        if (gh.mpts) strokeLine(gh.mpts, gh.width * (0.6 + 0.4 * a), gh.mcolor, a * 0.7, true);
+      }
+    }
+
+    function drawPops() {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (const p of pops) {
+        const t = p.age / 1.1;
+        const rise = reduced.matches ? 0 : p.age * 26;
+        ctx.globalAlpha = t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3;
+        ctx.font = `700 ${p.big ? 18 : 13}px ${fontDisplay}`;
+        ctx.lineWidth = 3; ctx.strokeStyle = "rgba(8,10,28,.8)";
+        ctx.strokeText(p.text, p.x, p.y - rise);
+        ctx.fillStyle = p.color;
+        ctx.fillText(p.text, p.x, p.y - rise);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawStreak() {
+      if (streak.n < 3) return;
+      // visible while the swipe is going, then fades out over ~1.2 s
+      const fade = streak.live ? 1 : Math.max(0, 1 - streak.age / 1.2);
+      if (fade <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+      ctx.translate(W / 2, 172);
+      const scale = reduced.matches ? 1 : 1 + streakBump * 0.4;
+      ctx.scale(scale, scale);
+      ctx.font = `600 11px ${fontMono}`;
+      ctx.fillStyle = "#ffd9cc";
+      ctx.fillText("S T R E A K", 0, -34);
+      ctx.font = `700 50px ${fontDisplay}`;
+      ctx.shadowColor = accent; ctx.shadowBlur = 24;
+      const g = ctx.createLinearGradient(0, -40, 0, 4);
+      g.addColorStop(0, "#fff3c4"); g.addColorStop(1, "#ff8a5c");
+      ctx.fillStyle = g;
+      ctx.fillText(`×${streak.n}`, 0, 8);
+      ctx.restore();
+    }
+    let streakBump = 0;
+
+    function drawBanner() {
+      if (state !== "play" || waveIntro <= 0) return;
+      const t = 1.8 - waveIntro;
+      const a = t < 0.3 ? t / 0.3 : waveIntro < 0.4 ? waveIntro / 0.4 : 1;
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = `600 11px ${fontMono}`;
+      ctx.fillStyle = accent;
+      ctx.fillText(wave === 1 ? "INCOMING" : "NEXT WAVE", W / 2, H * 0.36);
+      ctx.font = `700 46px ${fontDisplay}`;
+      ctx.fillStyle = "#fff";
+      ctx.shadowColor = accent; ctx.shadowBlur = 20;
+      ctx.fillText(`Wave ${wave}`, W / 2, H * 0.36 + 34);
+      ctx.shadowBlur = 0;
+      ctx.font = `500 13px ${fontMono}`;
+      ctx.fillStyle = "#b9bde0";
+      ctx.fillText(`destroy ${need} asteroids`, W / 2, H * 0.36 + 70);
+      ctx.restore();
+    }
+
+    // ---------- loop ----------
+    let raf = 0, lastTs = 0, running = false;
+    function frame(ts: number) {
+      if (!running) return;
+      const dt = Math.min(0.033, Math.max(0, (ts - lastTs) / 1000));
+      lastTs = ts;
+      streakBump = Math.max(0, streakBump - dt * 5);
+      update(dt);
+      if (!running) return;
+      drawFrame();
+      raf = requestAnimationFrame(frame);
+    }
+    function start() {
+      if (running || paused) return;
+      running = true;
+      lastTs = performance.now();
+      raf = requestAnimationFrame(frame);
+    }
+    function stop() { running = false; cancelAnimationFrame(raf); }
+
+    // ---------- start screen scene ----------
+    function attractScene() {
+      rocks = [];
+      const a = makeRock(48, 0.8, false); a.y = 128; a.vx = 40; a.vy = 120;
+      const b = makeRock(312, 1.1, false); b.y = 352; b.vx = -50; b.vy = 170; b.pal = 1;
+      const c = makeRock(66, 1.05, true); c.y = 372; c.vx = 30; c.vy = 140;
+      rocks.push(a, b, c);
+      time = 0.4;
+      drawFrame();
+    }
+    attractScene();
+
+    // ---------- wiring ----------
+    $("[data-play]").addEventListener("click", () => newGame());
+    $("[data-again]").addEventListener("click", () => newGame());
+    $("[data-resume]").addEventListener("click", () => resume());
+    const sb = $("[data-startbest]");
+    if (best > 0) { sb.hidden = false; sb.innerHTML = `Your best: <b>${fmt(best)}</b>`; }
+    updateHud(true);
+
+    document.addEventListener("keydown", (e) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      const tgt = e.target as HTMLElement | null;
+      if (tgt && (tgt.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tgt.tagName))) return;
+      if (!inView) return;
+      if (state === "bonus" && !paused && ["1", "2", "3"].includes(e.key)) {
+        const k = offered[Number(e.key) - 1];
+        if (k) { e.preventDefault(); pickBonus(k); }
+        return;
+      }
+      if ((e.key === "p" || e.key === "P") && active()) {
+        e.preventDefault();
+        paused ? resume() : pause();
+      }
+    });
+
+    const io = new IntersectionObserver((entries) => {
+      for (const en of entries) {
+        inView = en.isIntersecting && en.intersectionRatio >= 0.3;
+        if (!inView) pause();
+      }
+    }, { threshold: [0, 0.3, 0.6] });
+    io.observe(stage);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
+    window.addEventListener("blur", () => { if (pointerId !== null) { pointerId = null; endSwipe(); } });
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-swiper]").forEach(initSwiper);
+</script>
