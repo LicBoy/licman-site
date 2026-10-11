@@ -1,0 +1,566 @@
+[
+ {
+  "id": 13,
+  "name": "Ochpochmak",
+  "price": 70000,
+  "category": "Food",
+  "ingredients": [
+   {
+    "name": "Beef",
+    "unit": "g",
+    "qty": 56.9,
+    "costPerUnit": 280
+   },
+   {
+    "name": "Butter",
+    "unit": "g",
+    "qty": 4.7,
+    "costPerUnit": 250
+   },
+   {
+    "name": "Egg",
+    "unit": "pcs",
+    "qty": 0.5,
+    "costPerUnit": 3500
+   },
+   {
+    "name": "Onion",
+    "unit": "g",
+    "qty": 14.2,
+    "costPerUnit": 22
+   },
+   {
+    "name": "Packaging box",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 3000
+   },
+   {
+    "name": "Potato",
+    "unit": "g",
+    "qty": 38.0,
+    "costPerUnit": 25
+   },
+   {
+    "name": "Spices",
+    "unit": "g",
+    "qty": 1.4,
+    "costPerUnit": 200
+   },
+   {
+    "name": "Wheat flour",
+    "unit": "g",
+    "qty": 42.7,
+    "costPerUnit": 20
+   }
+  ],
+  "cost": 24253
+ },
+ {
+  "id": 14,
+  "name": "Samsa with Lamb",
+  "price": 70000,
+  "category": "Food",
+  "ingredients": [
+   {
+    "name": "Butter",
+    "unit": "g",
+    "qty": 3.3,
+    "costPerUnit": 250
+   },
+   {
+    "name": "Egg",
+    "unit": "pcs",
+    "qty": 0.5,
+    "costPerUnit": 3500
+   },
+   {
+    "name": "Lamb",
+    "unit": "g",
+    "qty": 39.1,
+    "costPerUnit": 380
+   },
+   {
+    "name": "Onion",
+    "unit": "g",
+    "qty": 9.8,
+    "costPerUnit": 22
+   },
+   {
+    "name": "Packaging box",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 3000
+   },
+   {
+    "name": "Spices",
+    "unit": "g",
+    "qty": 1.0,
+    "costPerUnit": 200
+   },
+   {
+    "name": "Wheat flour",
+    "unit": "g",
+    "qty": 29.3,
+    "costPerUnit": 20
+   }
+  ],
+  "cost": 21435
+ },
+ {
+  "id": 9,
+  "name": "Syrniki",
+  "price": 165000,
+  "category": "Food",
+  "ingredients": [
+   {
+    "name": "Cottage cheese",
+    "unit": "g",
+    "qty": 258.1,
+    "costPerUnit": 180
+   },
+   {
+    "name": "Egg",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 3500
+   },
+   {
+    "name": "Packaging box",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 3000
+   },
+   {
+    "name": "Sour cream",
+    "unit": "g",
+    "qty": 51.6,
+    "costPerUnit": 150
+   },
+   {
+    "name": "Sugar",
+    "unit": "g",
+    "qty": 25.8,
+    "costPerUnit": 25
+   },
+   {
+    "name": "Wheat flour",
+    "unit": "g",
+    "qty": 41.3,
+    "costPerUnit": 20
+   }
+  ],
+  "cost": 62169
+ },
+ {
+  "id": 22,
+  "name": "Cinnamon Roll",
+  "price": 55000,
+  "category": "Desserts",
+  "ingredients": [
+   {
+    "name": "Butter",
+    "unit": "g",
+    "qty": 28.9,
+    "costPerUnit": 250
+   },
+   {
+    "name": "Cinnamon",
+    "unit": "g",
+    "qty": 2.9,
+    "costPerUnit": 400
+   },
+   {
+    "name": "Egg",
+    "unit": "pcs",
+    "qty": 0.5,
+    "costPerUnit": 3500
+   },
+   {
+    "name": "Milk",
+    "unit": "ml",
+    "qty": 28.9,
+    "costPerUnit": 35
+   },
+   {
+    "name": "Packaging box",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 3000
+   },
+   {
+    "name": "Sugar",
+    "unit": "g",
+    "qty": 9.6,
+    "costPerUnit": 25
+   },
+   {
+    "name": "Wheat flour",
+    "unit": "g",
+    "qty": 96.3,
+    "costPerUnit": 20
+   },
+   {
+    "name": "Yeast",
+    "unit": "g",
+    "qty": 2.9,
+    "costPerUnit": 150
+   }
+  ],
+  "cost": 16748
+ },
+ {
+  "id": 24,
+  "name": "Syrok Classic Vanilla",
+  "price": 70000,
+  "category": "Desserts",
+  "ingredients": [
+   {
+    "name": "Chocolate",
+    "unit": "g",
+    "qty": 22.3,
+    "costPerUnit": 320
+   },
+   {
+    "name": "Cottage cheese",
+    "unit": "g",
+    "qty": 89.3,
+    "costPerUnit": 180
+   },
+   {
+    "name": "Packaging box",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 3000
+   },
+   {
+    "name": "Sugar",
+    "unit": "g",
+    "qty": 17.9,
+    "costPerUnit": 25
+   }
+  ],
+  "cost": 26658
+ },
+ {
+  "id": 21,
+  "name": "Chocobon",
+  "price": 70000,
+  "category": "Desserts",
+  "ingredients": [
+   {
+    "name": "Butter",
+    "unit": "g",
+    "qty": 20.1,
+    "costPerUnit": 250
+   },
+   {
+    "name": "Chocolate",
+    "unit": "g",
+    "qty": 26.8,
+    "costPerUnit": 320
+   },
+   {
+    "name": "Cocoa",
+    "unit": "g",
+    "qty": 13.4,
+    "costPerUnit": 300
+   },
+   {
+    "name": "Egg",
+    "unit": "pcs",
+    "qty": 0.5,
+    "costPerUnit": 3500
+   },
+   {
+    "name": "Milk",
+    "unit": "ml",
+    "qty": 40.1,
+    "costPerUnit": 35
+   },
+   {
+    "name": "Packaging box",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 3000
+   },
+   {
+    "name": "Sugar",
+    "unit": "g",
+    "qty": 13.4,
+    "costPerUnit": 25
+   },
+   {
+    "name": "Wheat flour",
+    "unit": "g",
+    "qty": 133.8,
+    "costPerUnit": 20
+   },
+   {
+    "name": "Yeast",
+    "unit": "g",
+    "qty": 4.0,
+    "costPerUnit": 150
+   }
+  ],
+  "cost": 27386
+ },
+ {
+  "id": 1,
+  "name": "Borodinskiy Bread",
+  "price": 70000,
+  "category": "Bread",
+  "ingredients": [
+   {
+    "name": "Cocoa",
+    "unit": "g",
+    "qty": 9.0,
+    "costPerUnit": 300
+   },
+   {
+    "name": "Packaging bag",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 800
+   },
+   {
+    "name": "Rye flour",
+    "unit": "g",
+    "qty": 542.0,
+    "costPerUnit": 32
+   },
+   {
+    "name": "Spices",
+    "unit": "g",
+    "qty": 9.0,
+    "costPerUnit": 200
+   },
+   {
+    "name": "Sugar",
+    "unit": "g",
+    "qty": 18.1,
+    "costPerUnit": 25
+   },
+   {
+    "name": "Vegetable oil",
+    "unit": "ml",
+    "qty": 18.1,
+    "costPerUnit": 45
+   },
+   {
+    "name": "Yeast",
+    "unit": "g",
+    "qty": 10.8,
+    "costPerUnit": 150
+   }
+  ],
+  "cost": 25531
+ },
+ {
+  "id": 7,
+  "name": "Rye Bread",
+  "price": 49000,
+  "category": "Bread",
+  "ingredients": [
+   {
+    "name": "Packaging bag",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 800
+   },
+   {
+    "name": "Rye flour",
+    "unit": "g",
+    "qty": 494.8,
+    "costPerUnit": 32
+   },
+   {
+    "name": "Sugar",
+    "unit": "g",
+    "qty": 16.5,
+    "costPerUnit": 25
+   },
+   {
+    "name": "Vegetable oil",
+    "unit": "ml",
+    "qty": 16.5,
+    "costPerUnit": 45
+   },
+   {
+    "name": "Yeast",
+    "unit": "g",
+    "qty": 9.9,
+    "costPerUnit": 150
+   }
+  ],
+  "cost": 19274
+ },
+ {
+  "id": 11,
+  "name": "Tatar Manti",
+  "price": 125000,
+  "category": "Food",
+  "ingredients": [
+   {
+    "name": "Beef",
+    "unit": "g",
+    "qty": 144.2,
+    "costPerUnit": 280
+   },
+   {
+    "name": "Butter",
+    "unit": "g",
+    "qty": 12.0,
+    "costPerUnit": 250
+   },
+   {
+    "name": "Egg",
+    "unit": "pcs",
+    "qty": 0.5,
+    "costPerUnit": 3500
+   },
+   {
+    "name": "Onion",
+    "unit": "g",
+    "qty": 36.1,
+    "costPerUnit": 22
+   },
+   {
+    "name": "Packaging box",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 3000
+   },
+   {
+    "name": "Potato",
+    "unit": "g",
+    "qty": 96.1,
+    "costPerUnit": 25
+   },
+   {
+    "name": "Spices",
+    "unit": "g",
+    "qty": 3.6,
+    "costPerUnit": 200
+   },
+   {
+    "name": "Wheat flour",
+    "unit": "g",
+    "qty": 108.2,
+    "costPerUnit": 20
+   }
+  ],
+  "cost": 54207
+ },
+ {
+  "id": 46,
+  "name": "Pumpkin Soup",
+  "price": 70000,
+  "category": "Soups",
+  "ingredients": [
+   {
+    "name": "Carrot",
+    "unit": "g",
+    "qty": 86.2,
+    "costPerUnit": 20
+   },
+   {
+    "name": "Cream",
+    "unit": "ml",
+    "qty": 57.4,
+    "costPerUnit": 120
+   },
+   {
+    "name": "Onion",
+    "unit": "g",
+    "qty": 86.2,
+    "costPerUnit": 22
+   },
+   {
+    "name": "Potato",
+    "unit": "g",
+    "qty": 143.6,
+    "costPerUnit": 25
+   },
+   {
+    "name": "Pumpkin",
+    "unit": "g",
+    "qty": 359.0,
+    "costPerUnit": 30
+   },
+   {
+    "name": "Soup container",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 3500
+   },
+   {
+    "name": "Spices",
+    "unit": "g",
+    "qty": 5.7,
+    "costPerUnit": 200
+   },
+   {
+    "name": "Vegetable oil",
+    "unit": "ml",
+    "qty": 14.4,
+    "costPerUnit": 45
+   }
+  ],
+  "cost": 30156
+ },
+ {
+  "id": 51,
+  "name": "Ryazhenka",
+  "price": 75000,
+  "category": "Milk Products",
+  "ingredients": [
+   {
+    "name": "Bottle",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 4500
+   },
+   {
+    "name": "Cream",
+    "unit": "ml",
+    "qty": 61.9,
+    "costPerUnit": 120
+   },
+   {
+    "name": "Milk",
+    "unit": "ml",
+    "qty": 619.0,
+    "costPerUnit": 35
+   }
+  ],
+  "cost": 33593
+ },
+ {
+  "id": 56,
+  "name": "Strawberry Compote",
+  "price": 50000,
+  "category": "Drinks",
+  "ingredients": [
+   {
+    "name": "Bottle",
+    "unit": "pcs",
+    "qty": 1.0,
+    "costPerUnit": 4500
+   },
+   {
+    "name": "Strawberry",
+    "unit": "g",
+    "qty": 123.2,
+    "costPerUnit": 150
+   },
+   {
+    "name": "Sugar",
+    "unit": "g",
+    "qty": 32.8,
+    "costPerUnit": 25
+   }
+  ],
+  "cost": 23800
+ }
+]

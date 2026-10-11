@@ -1,0 +1,66 @@
+---
+const jobs = [
+  {
+    when: "2023 — now",
+    org: "CMA Small Systems AB",
+    role: "QA Automation Engineer",
+    points: [
+      "Backend test automation for instant payments and SWIFT MT / ISO 20022 MX messaging, including MX↔MT conversion.",
+      "Kotlin + Cucumber (BDD) and Python frameworks, run in Jenkins with Allure reports and WireMock stubs.",
+      "Wrote the steps in business language and onboarded 6 manual testers to write automated scenarios themselves. Smoke and E2E testing across several projects went from days to hours (about 4–6× faster).",
+    ],
+  },
+  {
+    when: "2023",
+    org: "a1qa",
+    role: "Test Automation Engineer (Intern)",
+    points: [
+      "Full-stack test automation in JavaScript with Mocha: UI and API tests against real websites such as Steam.",
+      "Test design and test case writing, with professional English training.",
+    ],
+  },
+  {
+    when: "2022",
+    org: "Revizor Vision",
+    role: "Computer Vision Engineer (Intern)",
+    points: [
+      "Collected and processed real-time video from cameras, and trained and deployed models that detect people to measure visitor flow in cafés and attractions.",
+    ],
+  },
+  {
+    when: "2018 — 2022",
+    org: "Kazan State Power Engineering University",
+    role: "Bachelor's, Applied Mathematics",
+    points: ["Thesis: image super-resolution with GANs (see above)."],
+  },
+];
+---
+<section id="experience" class="exp">
+  <div class="wrap">
+    <p class="eyebrow">Experience</p>
+    <h2>Where I've worked</h2>
+    <ol class="list">
+      {jobs.map((j) => (
+        <li>
+          <p class="when mono">{j.when}</p>
+          <div>
+            <h3>{j.role} <span class="org">· {j.org}</span></h3>
+            <ul>{j.points.map((p) => <li>{p}</li>)}</ul>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .exp { padding: clamp(64px, 9vw, 120px) 0; border-top: 1px solid var(--line); }
+  h2 { font-size: clamp(32px, 4vw, 48px); margin: 14px 0 40px; font-weight: 650; }
+  .list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; }
+  .list > li { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 24px; padding: 26px 0; border-top: 1px solid var(--line); }
+  @media (max-width: 640px) { .list > li { grid-template-columns: minmax(0, 1fr); gap: 6px; } }
+  .when { font-size: 14px; color: var(--muted); padding-top: 4px; }
+  h3 { font-size: 22px; font-weight: 600; }
+  .org { color: var(--muted); font-weight: 500; }
+  ul { margin: 10px 0 0; padding-left: 1.1em; color: var(--ink-2); display: grid; gap: 6px; }
+</style>

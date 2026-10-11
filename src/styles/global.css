@@ -1,0 +1,67 @@
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+:root {
+  --paper: #f7f3ec;
+  --paper-2: #efe8dc;
+  --card: #fffdf9;
+  --ink: #191714;
+  --ink-2: #3a352e;
+  --muted: #6e665b;
+  --line: #e2d9cb;
+  --pass: #1f9d55;
+  --pass-soft: #dff3e6;
+  --fail: #d64545;
+  --accent: #e8962a;
+
+  --font-display: "Space Grotesk Variable", system-ui, sans-serif;
+  --font-body: "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --radius: 18px;
+  --shadow: 0 1px 0 rgba(25, 23, 20, .04), 0 12px 40px -12px rgba(60, 40, 10, .18);
+  --wrap: 1180px;
+  --gutter: clamp(16px, 4vw, 40px);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 17px/1.6 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+img, video { max-width: 100%; display: block; }
+a { color: inherit; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.08; letter-spacing: -.02em; margin: 0; }
+p { margin: 0; }
+code, kbd, .mono { font-family: var(--font-mono); }
+::selection { background: #f3d39b; }
+
+.wrap { width: 100%; max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: .5em;
+  padding: .8em 1.25em; border-radius: 999px;
+  font: 600 15px/1 var(--font-body); text-decoration: none;
+  border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper);
+  cursor: pointer; transition: transform .15s, background .15s, color .15s;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn.ghost:hover { background: var(--ink); color: var(--paper); }
+.btn:focus-visible, a:focus-visible, button:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 3px; }
+
+.eyebrow {
+  font: 600 13px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.tag {
+  display: inline-block; padding: .35em .7em; border-radius: 999px;
+  font: 500 13px/1 var(--font-mono); background: var(--paper-2); color: var(--ink-2);
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

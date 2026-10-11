@@ -1,0 +1,28 @@
+---
+import "../styles/global.css";
+interface Props { title?: string; description?: string }
+const {
+  title = "Ruslan Akhmetvaleev: QA automation engineer who builds apps",
+  description = "SDET in fintech and payments. I also build Telegram Mini Apps and internal tools for small businesses. Interactive portfolio.",
+} = Astro.props;
+const og = new URL("/og.jpg", Astro.site ?? Astro.url).href;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f7f3ec" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={og} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

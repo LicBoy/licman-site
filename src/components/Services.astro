@@ -1,0 +1,50 @@
+---
+const offers = [
+  {
+    icon: "🥐",
+    title: "Ordering app for your café or shop",
+    text: "A Telegram Mini App where customers browse your menu, order and pay, with a staff panel for orders, stock and profit per product. Like Rahat Go, set up for your business.",
+  },
+  {
+    icon: "✅",
+    title: "Test automation for your product",
+    text: "API and UI test suites with CI and readable reports. BDD steps in plain language, so your team can write new tests without me.",
+  },
+  {
+    icon: "🤖",
+    title: "Telegram bots and internal tools",
+    text: "Automate the repetitive part of your work: notifications, order intake, reports, admin panels, integrations with the services you already use.",
+  },
+];
+---
+<section id="hire" class="hire">
+  <div class="wrap">
+    <p class="eyebrow">Freelance</p>
+    <h2>What I can build for you</h2>
+    <div class="cards">
+      {offers.map((o) => (
+        <article>
+          <span class="icon" aria-hidden="true">{o.icon}</span>
+          <h3>{o.title}</h3>
+          <p>{o.text}</p>
+        </article>
+      ))}
+    </div>
+    <p class="cta">
+      <a class="btn" href="https://t.me/Licman" target="_blank" rel="noopener">Tell me about your project</a>
+      <a class="btn ghost" href="mailto:ahmetvaleevr@gmail.com">ahmetvaleevr@gmail.com</a>
+    </p>
+  </div>
+</section>
+
+<style>
+  .hire { padding: clamp(64px, 9vw, 120px) 0; background: var(--paper-2); }
+  h2 { font-size: clamp(32px, 4vw, 48px); margin: 14px 0 36px; font-weight: 650; }
+  .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  @media (max-width: 860px) { .cards { grid-template-columns: minmax(0, 1fr); } }
+  article { background: var(--card); border-radius: var(--radius); padding: 26px; box-shadow: var(--shadow); }
+  .icon { font-size: 30px; }
+  h3 { font-size: 21px; margin: 14px 0 10px; font-weight: 600; }
+  article p { color: var(--ink-2); font-size: 16px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+</style>
