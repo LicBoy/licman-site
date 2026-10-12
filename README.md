@@ -27,7 +27,7 @@ npm run dev      # http://localhost:4321
 npm run build    # static site in dist/
 ```
 
-Requires Node 22.12+. Deployed on Cloudflare Pages from `main`.
+Requires Node 22.12+. Deployed as a Cloudflare Worker with static assets: `npm run build && npx wrangler deploy`.
 
 ## Content notes
 
