@@ -1,0 +1,44 @@
+---
+// The one place that asks: let's work together.
+const links = [
+  { label: "Telegram", sub: "@Licman", href: "https://t.me/Licman", primary: true },
+  { label: "LinkedIn", sub: "in/licman", href: "https://www.linkedin.com/in/licman" },
+  { label: "GitHub", sub: "LicBoy", href: "https://github.com/LicBoy" },
+  { label: "Email", sub: "ahmetvaleevr@gmail.com", href: "mailto:ahmetvaleevr@gmail.com" },
+];
+---
+<section class="contact" id="contact" aria-label="Contact">
+  <div class="wrap">
+    <img class="face" src="/media/ruslan-face.webp" alt="" width="360" height="360" loading="lazy" />
+    <h2>Let's work<br /><span>together.</span></h2>
+    <p class="sub">Open to SDET roles in fintech, and to freelance projects: web apps, automation and testing.</p>
+    <ul>
+      {links.map((l) => (
+        <li><a class:list={{ primary: l.primary }} href={l.href} target={l.href.startsWith("http") ? "_blank" : undefined} rel="noopener"><b>{l.label}</b><span>{l.sub}</span><i aria-hidden="true">↗</i></a></li>
+      ))}
+    </ul>
+  </div>
+  <footer class="wrap foot"><span>© {new Date().getFullYear()} Ruslan Akhmetvaleev</span><span>licman.dev</span></footer>
+</section>
+
+<style>
+  .contact { position: relative; padding: clamp(100px, 14vw, 180px) 0 30px; text-align: center; overflow: hidden; }
+  .contact::before { content: ""; position: absolute; left: 50%; top: 10%; width: 1100px; height: 1100px; margin-left: -550px; background: radial-gradient(circle, rgba(255,106,92,.16), rgba(176,108,255,.08) 40%, transparent 65%); pointer-events: none; }
+  .wrap { position: relative; }
+  .face { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 36px; box-shadow: 0 0 0 4px rgba(255,255,255,.08), 0 20px 60px -20px rgba(0,0,0,.8); }
+  h2 { font-size: clamp(56px, 10vw, 150px); letter-spacing: -.055em; line-height: .92; font-weight: 700; }
+  h2 span { background: linear-gradient(90deg, #ffb340, #ff6a5c 50%, #b06cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { margin: 30px auto 0; max-width: 34em; font-size: clamp(17px, 1.5vw, 20px); color: #a1a1a6; }
+  ul { list-style: none; padding: 0; margin: 50px auto 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; max-width: 1000px; }
+  @media (max-width: 860px) { ul { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 420px) { ul { grid-template-columns: minmax(0, 1fr); } }
+  a { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 22px 22px 20px; border-radius: 20px; border: 1px solid var(--d-line); text-decoration: none; text-align: left; background: rgba(255,255,255,.03); transition: background .2s, transform .2s, border-color .2s; min-width: 0; }
+  a:hover { background: rgba(255,255,255,.07); transform: translateY(-3px); border-color: rgba(255,255,255,.22); }
+  a b { font: 650 19px/1.2 var(--font-display); }
+  a span { font-size: 14px; color: var(--d-muted); overflow: hidden; text-overflow: ellipsis; max-width: 100%; white-space: nowrap; }
+  a i { position: absolute; right: 18px; top: 18px; font-style: normal; color: var(--d-muted); }
+  a.primary { background: #f5f5f7; color: #0b0b0d; border-color: #f5f5f7; }
+  a.primary span, a.primary i { color: #515154; }
+  a.primary:hover { background: #fff; }
+  .foot { display: flex; justify-content: space-between; margin-top: clamp(80px, 11vw, 140px); padding-top: 22px; border-top: 1px solid var(--d-line); font: 500 13px/1 var(--font-mono); color: #6e6e73; }
+</style>

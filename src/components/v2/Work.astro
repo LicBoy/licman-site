@@ -1,0 +1,197 @@
+---
+// Selected work: full-screen cards that stack as you scroll. Each card plays a looping background
+// video and opens the project's interactive demo in a full-screen panel.
+import RahatDemo from "../demos/RahatDemo.astro";
+import PaymentsDemo from "../demos/PaymentsDemo.astro";
+import LabelingDemo from "../demos/LabelingDemo.astro";
+import SrDemo from "../demos/SrDemo.astro";
+import SwiperDemo from "../demos/SwiperDemo.astro";
+
+const projects = [
+  {
+    id: "payments", demo: PaymentsDemo, bg: "pay", accent: "#34d399",
+    label: "Day job · Fintech QA",
+    title: "Payment bugs stop here.",
+    why: "At CMA Small Systems I automate testing of instant payments and SWIFT / ISO 20022 messaging, so releases don't wait on days of manual checks.",
+    stats: [{ v: "4–6×", l: "faster smoke & E2E testing" }, { v: "6", l: "manual testers now write automated tests" }],
+    stack: "Kotlin · Cucumber · Python · Jenkins · Allure",
+    link: null,
+    note: "Demo scenario is illustrative; client systems are under NDA.",
+  },
+  {
+    id: "rahat", demo: RahatDemo, bg: "rahat", accent: "#ffb340",
+    label: "Product · Built solo",
+    title: "One app runs a whole bakery.",
+    why: "Orders came through chats and stock lived on paper. Now customers order in the app and staff run orders, stock and profit per dish in one place.",
+    stats: [{ v: "3+ months", l: "in daily use by the staff" }, { v: "1 app", l: "ordering, stock and analytics" }],
+    stack: "Go · PostgreSQL · JavaScript · Telegram Mini Apps",
+    link: { label: "Showcase on GitHub", href: "https://github.com/LicBoy/rahat-go-showcase" },
+  },
+  {
+    id: "labeling", demo: LabelingDemo, bg: "label", accent: "#6aa0ff",
+    label: "ML · Automation",
+    title: "I automated my own job.",
+    why: "Labeling chats by hand was repetitive, so I trained a model on my own answers and let a bot do the clicking.",
+    stats: [{ v: "5,808", l: "chats it learned from" }, { v: "77%", l: "accuracy on hand-checked chats" }],
+    stack: "Python · PyTorch · RuBERT · Selenium",
+    link: { label: "Code on GitHub", href: "https://github.com/LicBoy/chatGPT-avito-solver" },
+  },
+  {
+    id: "superres", demo: SrDemo, bg: "sr", accent: "#b48cff",
+    label: "Thesis · Computer vision",
+    title: "Small images, sharp again.",
+    why: "Classic upscaling blurs. I trained GANs that redraw the missing detail.",
+    stats: [{ v: "4×", l: "upscaling" }, { v: "2 GANs", l: "built and trained in PyTorch" }],
+    stack: "PyTorch · SRGAN · ESRGAN",
+    link: { label: "Thesis code", href: "https://github.com/LicBoy/thesis-SR" },
+  },
+  {
+    id: "swiper", demo: SwiperDemo, bg: "swiper", accent: "#ff7a59", dark: true,
+    label: "Game · 2021",
+    title: "My first shipped product.",
+    why: "An arcade game I designed, drew and released on Google Play. Now playable in the browser.",
+    stats: [{ v: "12", l: "power-ups" }, { v: "EN · RU", l: "localized, dark & light themes" }],
+    stack: "Unity · C# · AdMob",
+    link: { label: "C# source", href: "https://github.com/LicBoy/2D-Game-Swiper-" },
+  },
+];
+---
+<section class="work" id="work" aria-label="Selected work">
+  <div class="intro wrap">
+    <p class="k">Selected work</p>
+    <h2>Things I've tested,<br /><span>built and shipped.</span></h2>
+  </div>
+
+  <div class="stack">
+    {projects.map((p, i) => (
+      <article class="card" id={p.id} style={`--a:${p.accent}`} data-card>
+        <div class="inner" data-inner>
+          <video class="bg" src={`/media/bg/${p.bg}.mp4`} poster={`/media/bg/${p.bg}.jpg`} muted loop playsinline preload="none" aria-hidden="true"></video>
+          <div class="shade"></div>
+          <div class="content">
+            <p class="meta"><span class="n">{String(i + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}</span>{p.label}</p>
+            <h3>{p.title}</h3>
+            <p class="why">{p.why}</p>
+            <dl class="stats">
+              {p.stats.map((s) => (<div><dt>{s.v}</dt><dd>{s.l}</dd></div>))}
+            </dl>
+            <p class="tech">{p.stack}</p>
+            <div class="acts">
+              <button class="open" type="button" data-open={p.id}>Open live demo <span aria-hidden="true">↗</span></button>
+              {p.link && <a class="ghost" href={p.link.href} target="_blank" rel="noopener">{p.link.label}</a>}
+            </div>
+            {p.note && <p class="note">{p.note}</p>}
+          </div>
+        </div>
+      </article>
+    ))}
+  </div>
+
+  {projects.map((p) => (
+    <dialog class:list={["modal", { dark: p.dark }]} data-modal={p.id} aria-label={`${p.title}: live demo`}>
+      <div class="mhead">
+        <span><b style={`color:${p.accent}`}>●</b> {p.title} <em>live demo</em></span>
+        <button type="button" class="x" data-close aria-label="Close demo">✕</button>
+      </div>
+      <div class="mbody" style={`--accent:${p.accent}`}><p.demo /></div>
+    </dialog>
+  ))}
+</section>
+
+<style>
+  .work { position: relative; }
+  .intro { padding: clamp(80px, 12vw, 160px) var(--gutter) clamp(40px, 6vw, 70px); }
+  .k { font: 600 13px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--d-muted); }
+  h2 { font-size: clamp(40px, 6vw, 88px); letter-spacing: -.045em; line-height: 1; margin-top: 18px; font-weight: 700; }
+  h2 span { color: var(--d-muted); }
+
+  .stack { position: relative; }
+  .card { position: sticky; top: 0; height: 100svh; padding: 14px; }
+  .card + .card { margin-top: 12vh; }
+  .inner { position: relative; height: 100%; border-radius: 34px; overflow: hidden; background: #0b0b0d; box-shadow: 0 -30px 80px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.06); transform-origin: 50% 0; will-change: transform, filter; }
+  .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: right center; }
+  .shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,5,7,.96) 0%, rgba(5,5,7,.85) 34%, rgba(5,5,7,.15) 62%, transparent 75%); }
+  .content { position: relative; height: 100%; max-width: 620px; padding: clamp(28px, 5vw, 72px); display: flex; flex-direction: column; justify-content: center; }
+  .meta { display: flex; align-items: center; gap: 14px; font: 600 13px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--a); }
+  .n { color: var(--d-muted); letter-spacing: .06em; }
+  h3 { font-size: clamp(38px, 5vw, 76px); letter-spacing: -.045em; line-height: 1; margin: 20px 0 22px; font-weight: 700; }
+  .why { font-size: clamp(17px, 1.45vw, 21px); line-height: 1.5; color: #c7c7cc; max-width: 30em; }
+  .stats { display: flex; flex-wrap: wrap; gap: 18px 44px; margin: 34px 0 0; }
+  .stats dt { font: 700 clamp(30px, 3.4vw, 46px)/1 var(--font-display); letter-spacing: -.03em; color: #fff; }
+  .stats dd { margin: 8px 0 0; font-size: 14.5px; color: var(--d-muted); max-width: 15em; line-height: 1.35; }
+  .tech { margin-top: 30px; font: 500 13.5px/1.5 var(--font-mono); color: #8e8e93; }
+  .acts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; margin-top: 30px; }
+  .open { display: inline-flex; align-items: center; gap: 10px; padding: 15px 24px; border-radius: 999px; border: 0; background: #fff; color: #0b0b0d; font: 650 16px/1 var(--font-body); cursor: pointer; transition: transform .2s, box-shadow .2s; box-shadow: 0 0 0 0 var(--a); }
+  .open:hover { transform: translateY(-2px); box-shadow: 0 10px 40px -8px var(--a); }
+  .ghost { color: #f5f5f7; font-weight: 600; text-decoration: none; border-bottom: 1.5px solid rgba(255,255,255,.35); padding-bottom: 3px; }
+  .ghost:hover { border-color: var(--a); }
+  .note { margin-top: 18px; font-size: 13px; color: #6e6e73; }
+  @media (max-width: 820px) {
+    .card { padding: 8px; }
+    .inner { border-radius: 24px; }
+    .bg { height: 50%; object-position: 74% center; }
+    .shade { background: linear-gradient(180deg, transparent 0%, transparent 30%, rgba(11,11,13,.9) 46%, #0b0b0d 52%); }
+    .content { justify-content: flex-end; padding: 22px 20px 24px; }
+    h3 { margin: 14px 0 12px; }
+    .why { font-size: 15.5px; line-height: 1.45; }
+    .stats { margin-top: 18px; gap: 12px 26px; }
+    .stats dd { font-size: 13px; }
+    .tech { display: none; }
+    .acts { margin-top: 20px; }
+    .open { padding: 13px 20px; font-size: 15px; }
+    .note { display: none; }
+  }
+  @media (max-width: 820px) and (max-height: 700px) { .why { display: none; } }
+
+  /* demo modal */
+  .modal { width: min(1180px, calc(100vw - 24px)); max-width: none; height: calc(100svh - 24px); max-height: none; margin: auto; padding: 0; border: 0; border-radius: 26px; background: var(--paper); color: var(--ink); overflow: hidden; }
+  .modal[open] { display: flex; flex-direction: column; animation: pop .35s cubic-bezier(.2,.8,.2,1); }
+  .modal::backdrop { background: rgba(0,0,0,.72); backdrop-filter: blur(6px); }
+  @keyframes pop { from { opacity: 0; transform: translateY(24px) scale(.98); } to { opacity: 1; transform: none; } }
+  .mhead { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 14px 24px; border-bottom: 1px solid var(--line); font: 600 15px/1.2 var(--font-body); }
+  .mhead em { font-style: normal; color: var(--muted); font-weight: 500; margin-left: 6px; }
+  .x { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--paper-2); font-size: 16px; cursor: pointer; color: inherit; }
+  .mbody { flex: 1; overflow: auto; padding: clamp(16px, 3vw, 36px); }
+  .mbody > :global(*) { max-width: 760px; margin: 0 auto; }
+  .modal.dark { background: #0d1024; color: #e8e9f5; --muted: #a1a5c4; --ink-2: #cfd1e6; --paper-2: #1c2142; --line: #262b52; }
+  @media (prefers-reduced-motion: reduce) { .modal[open] { animation: none; } }
+</style>
+
+<script>
+  const cards = [...document.querySelectorAll<HTMLElement>("[data-card]")];
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Stacking: as the next card slides over, the current one scales back and dims.
+  function stack() {
+    if (reduce) return;
+    cards.forEach((c, i) => {
+      const next = cards[i + 1];
+      const inner = c.querySelector<HTMLElement>("[data-inner]")!;
+      if (!next) { inner.style.transform = ""; inner.style.filter = ""; return; }
+      const r = next.getBoundingClientRect();
+      const p = Math.max(0, Math.min(1, 1 - r.top / innerHeight));
+      inner.style.transform = `scale(${1 - p * .08})`;
+      inner.style.filter = `brightness(${1 - p * .55})`;
+    });
+  }
+  addEventListener("scroll", () => requestAnimationFrame(stack), { passive: true });
+  addEventListener("resize", stack); stack();
+
+  // Play background videos only while their card is on screen.
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    const v = e.target.querySelector("video")!;
+    if (e.isIntersecting && !reduce) { if (v.preload === "none") v.preload = "auto"; v.play().catch(() => {}); } else v.pause();
+  }), { threshold: .2 });
+  cards.forEach((c) => io.observe(c));
+
+  // Demo panels
+  document.querySelectorAll<HTMLButtonElement>("[data-open]").forEach((b) => b.addEventListener("click", () => {
+    const d = document.querySelector<HTMLDialogElement>(`[data-modal="${b.dataset.open}"]`)!;
+    d.showModal(); document.documentElement.style.overflow = "hidden";
+  }));
+  document.querySelectorAll<HTMLDialogElement>("dialog.modal").forEach((d) => {
+    d.querySelector("[data-close]")!.addEventListener("click", () => d.close());
+    d.addEventListener("click", (e) => { if (e.target === d) d.close(); });
+    d.addEventListener("close", () => { document.documentElement.style.overflow = ""; });
+  });
+</script>

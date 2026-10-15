@@ -1,187 +1,47 @@
 ---
 import Base from "../layouts/Base.astro";
-import Hero from "../components/Hero.astro";
-import Chapter from "../components/Chapter.astro";
-import Experience from "../components/Experience.astro";
-import Services from "../components/Services.astro";
-import Footer from "../components/Footer.astro";
-import RahatDemo from "../components/demos/RahatDemo.astro";
-import PaymentsDemo from "../components/demos/PaymentsDemo.astro";
-import LabelingDemo from "../components/demos/LabelingDemo.astro";
-import SrDemo from "../components/demos/SrDemo.astro";
-import SwiperDemo from "../components/demos/SwiperDemo.astro";
+import Hero from "../components/v2/Hero.astro";
+import Reel from "../components/v2/Reel.astro";
+import Work from "../components/v2/Work.astro";
+import About from "../components/v2/About.astro";
+import Contact from "../components/v2/Contact.astro";
 ---
 <Base>
-  <nav class="nav">
-    <div class="wrap row">
-      <a class="logo" href="#top" aria-label="Back to top"><span class="tick">✓</span> licman</a>
-      <ul>
-        <li><a href="#work">Work</a></li>
-        <li><a href="#experience">Experience</a></li>
-        <li><a href="#hire">Hire me</a></li>
-      </ul>
-    </div>
-  </nav>
-  <main id="top">
-    <Hero />
-
-    <div id="work">
-      <Chapter
-        id="rahat"
-        num="01"
-        kicker="Product · 2026"
-        title="Rahat Go: a bakery that runs inside Telegram"
-        accent="#e8962a"
-        stats={[
-          { value: "3+ months", label: "used daily by the bakery's staff" },
-          { value: "56 dishes", label: "real menu, 3 languages" },
-          { value: "27 PRs", label: "160 commits, built solo" },
-        ]}
-        stack={["Go", "PostgreSQL", "JavaScript", "Telegram Mini Apps", "OSRM", "Railway", "Claude Code"]}
-        links={[
-          { label: "Showcase on GitHub", href: "https://github.com/LicBoy/rahat-go-showcase" },
-          { label: "Watch the 80-second demo", href: "/media/rahat-go-demo.mp4" },
-        ]}
-      >
-        <Fragment slot="story">
-          <p>
-            My friend owns a bakery in Da Nang. Orders came in through chats, stock lived on paper, and nobody knew
-            which dishes actually made money. I built him one app that does all of it, inside Telegram, where his
-            customers already are.
-          </p>
-          <p>
-            <strong>Customers</strong> browse the menu, order for pickup or delivery and pay by QR.{" "}
-            <strong>Staff</strong> run the order pipeline, a POS, dine-in tables and daily stock.{" "}
-            <strong>The owner</strong> sees revenue, best sellers and the real cost and margin of every dish.
-          </p>
-          <p>
-            One Go binary serves the bot, the REST API and the Mini App. I designed it and built it with Claude Code
-            sub-agents, reviewing every pull request.
-          </p>
-          <p class="try">Try it: add something to the cart, then switch to <em>Staff</em> and <em>Owner</em>.</p>
-        </Fragment>
-        <RahatDemo slot="demo" />
-      </Chapter>
-
-      <Chapter
-        id="payments"
-        num="02"
-        kicker="Day job · 2023 — now"
-        title="Test automation for instant payments"
-        accent="#1f9d55"
-        flip
-        stats={[
-          { value: "4–6×", label: "faster smoke and E2E testing" },
-          { value: "6 testers", label: "onboarded to writing automated scenarios" },
-        ]}
-        stack={["Kotlin", "Cucumber / Gherkin", "Python", "pytest", "WireMock", "Jenkins", "Allure", "ISO 20022", "SWIFT MT"]}
-        note="The scenario in the demo is illustrative and uses public ISO 20022 message types. Client systems and data are under NDA."
-      >
-        <Fragment slot="story">
-          <p>
-            At CMA Small Systems I build backend test frameworks for payment systems: instant payments, SWIFT MT and
-            ISO 20022 MX messages, and the conversion between them.
-          </p>
-          <p>
-            The trick that paid off most was writing the steps <strong>in business language</strong>. Our manual
-            testers could read them, then write new scenarios themselves. I onboarded six of them, and testing that
-            used to take days across several projects now takes hours.
-          </p>
-          <p class="try">Try it: run the scenario, or break the payment and watch the test catch it.</p>
-        </Fragment>
-        <PaymentsDemo slot="demo" />
-      </Chapter>
-
-      <Chapter
-        id="labeling"
-        num="03"
-        kicker="ML + automation · 2023"
-        title="I automated my own data-labeling job"
-        accent="#3d7cf2"
-        stats={[
-          { value: "5,808", label: "chats I labeled by hand, used as training data" },
-          { value: "77%", label: "accuracy on 379 hand-checked chats" },
-        ]}
-        stack={["Python", "PyTorch", "RuBERT-tiny", "Hugging Face", "Selenium", "Tampermonkey"]}
-        links={[{ label: "Code on GitHub", href: "https://github.com/LicBoy/chatGPT-avito-solver" }]}
-        note="Chats in the demo are made up; the numbers are from the project's saved results."
-      >
-        <Fragment slot="story">
-          <p>
-            In 2023 I had a part-time job labeling buyer–seller chats: <em>did they agree on a deal?</em> Yes, no, or
-            not enough information. After a few thousand of them, I noticed I was the training data.
-          </p>
-          <p>
-            A Tampermonkey script saved every answer I gave. I fine-tuned a small Russian BERT on those answers, and a
-            Selenium bot used the model to read each chat and click the answer.
-          </p>
-        </Fragment>
-        <LabelingDemo slot="demo" />
-      </Chapter>
-
-      <Chapter
-        id="superres"
-        num="04"
-        kicker="Bachelor's thesis · 2022"
-        title="Making small images sharp again with GANs"
-        accent="#8b5cf6"
-        flip
-        stats={[
-          { value: "4×", label: "upscaling, 252 px → 1008 px" },
-          { value: "2 GANs", label: "SRGAN and ESRGAN, trained on CelebA" },
-        ]}
-        stack={["PyTorch", "GANs", "VGG19 perceptual loss", "Computer vision"]}
-        links={[{ label: "Thesis code and results", href: "https://github.com/LicBoy/thesis-SR" }]}
-      >
-        <Fragment slot="story">
-          <p>
-            Classical upscaling can only blend the pixels it already has, so a 4× enlargement comes out blurry.
-            A GAN learns what real detail looks like and draws it back in.
-          </p>
-          <p>
-            I implemented and trained SRGAN and ESRGAN in PyTorch and compared them with bicubic interpolation.
-            Drag the slider: left is bicubic, right is my ESRGAN, from the same small input.
-          </p>
-        </Fragment>
-        <SrDemo slot="demo" />
-      </Chapter>
-
-      <Chapter
-        id="swiper"
-        num="05"
-        kicker="Mobile game · 2020 — 2021"
-        title="Swiper: my first released game"
-        accent="#ff7a59"
-        dark
-        stack={["Unity", "C#", "Google AdMob", "Photoshop"]}
-        links={[{ label: "C# source on GitHub", href: "https://github.com/LicBoy/2D-Game-Swiper-" }]}
-        note="This is a small browser remake of the core loop. The original Android game was on Google Play until the developer account went inactive."
-      >
-        <Fragment slot="story">
-          <p>
-            Asteroids fall on your city; swipe to cut them down. Chain three or more in one swipe for a combo.
-            I made it in Unity with C#: waves, 12 power-ups, dark and light themes, English and Russian, and AdMob ads.
-          </p>
-          <p class="try">Play a round. Desktop: drag with the mouse. Phone: swipe.</p>
-        </Fragment>
-        <SwiperDemo slot="demo" />
-      </Chapter>
-    </div>
-
-    <Experience />
-    <Services />
-  </main>
-  <Footer />
+  <div class="site">
+    <nav class="nav" aria-label="Main">
+      <div class="wrap row">
+        <a class="logo" href="#top" aria-label="Back to top"><span class="tick">✓</span>licman</a>
+        <ul>
+          <li><a href="#work">Work</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </div>
+    </nav>
+    <main>
+      <Hero />
+      <Reel />
+      <Work />
+      <About />
+      <Contact />
+    </main>
+  </div>
 </Base>
 
+<style is:global>
+  body { background: #070709; }
+  .site {
+    --d-bg: #070709; --d-fg: #f5f5f7; --d-muted: #8e8e93; --d-line: rgba(255,255,255,.1);
+    background: var(--d-bg); color: var(--d-fg); min-height: 100vh;
+  }
+  .site ::selection { background: rgba(255,179,64,.35); }
+</style>
 <style>
-  .nav { position: sticky; top: 0; z-index: 50; background: color-mix(in srgb, var(--paper) 86%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
-  .row { display: flex; align-items: center; justify-content: space-between; height: 58px; }
-  .logo { font: 650 19px/1 var(--font-display); text-decoration: none; display: flex; align-items: center; gap: 8px; }
-  .tick { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: var(--ink); color: #3ccf7a; font-size: 15px; }
-  .nav ul { list-style: none; display: flex; gap: clamp(14px, 3vw, 28px); margin: 0; padding: 0; }
-  .nav a { text-decoration: none; font-weight: 550; font-size: 15px; }
-  .nav ul a:hover { text-decoration: underline; text-underline-offset: 4px; }
-  :global(.try) { font-weight: 600; color: var(--ink) !important; }
-  :global(.dark .try) { color: #fff !important; }
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 40; background: linear-gradient(rgba(7,7,9,.85), rgba(7,7,9,.55)); backdrop-filter: saturate(160%) blur(14px); -webkit-backdrop-filter: saturate(160%) blur(14px); border-bottom: 1px solid rgba(255,255,255,.06); }
+  .row { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .logo { display: flex; align-items: center; gap: 9px; font: 650 18px/1 var(--font-display); text-decoration: none; color: #f5f5f7; }
+  .tick { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: #f5f5f7; color: #0b0b0d; font-size: 14px; font-weight: 800; }
+  ul { list-style: none; display: flex; gap: clamp(18px, 3vw, 34px); margin: 0; padding: 0; }
+  ul a { color: #d1d1d6; text-decoration: none; font-weight: 550; font-size: 15px; transition: color .15s; }
+  ul a:hover { color: #fff; }
 </style>

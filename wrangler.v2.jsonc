@@ -1,0 +1,8 @@
+{
+  // Preview of the redesign branch, served on v2.licman.dev (production stays on licman.dev).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "licman-site-v2",
+  "compatibility_date": "2026-10-06",
+  "assets": { "directory": "./dist" },
+  "routes": [{ "pattern": "v2.licman.dev", "custom_domain": true }]
+}

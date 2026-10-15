@@ -1,0 +1,57 @@
+---
+// Toolbox marquee + compact experience timeline.
+const row1 = ["Kotlin", "Python", "Go", "TypeScript", "JavaScript", "SQL", "PostgreSQL", "C#"];
+const row2 = ["Cucumber / BDD", "pytest", "Selenium", "WireMock", "Jenkins", "Allure", "Docker", "PyTorch", "Claude Code"];
+const jobs = [
+  { when: "2023 — now", role: "QA Automation Engineer", org: "CMA Small Systems AB", line: "Test automation for instant payments, SWIFT MT and ISO 20022." },
+  { when: "2023", role: "Test Automation Engineer, intern", org: "a1qa", line: "UI and API automation in JavaScript on real websites." },
+  { when: "2022", role: "Computer Vision Engineer, intern", org: "Revizor Vision", line: "People detection from live cameras for visitor-flow analytics." },
+  { when: "2018 — 2022", role: "BSc Applied Mathematics", org: "Kazan State Power Engineering University", line: "Thesis on image super-resolution with GANs." },
+];
+---
+<section class="about" id="about" aria-label="About">
+  <div class="marquee" aria-label="Tools I use">
+    <div class="track">{[...row1, ...row1].map((t, i) => <span aria-hidden={i >= row1.length ? "true" : undefined}>{t}</span>)}</div>
+    <div class="track rev">{[...row2, ...row2].map((t, i) => <span aria-hidden={i >= row2.length ? "true" : undefined}>{t}</span>)}</div>
+  </div>
+
+  <div class="wrap exp">
+    <div class="head">
+      <p class="k">Experience</p>
+      <h2>Quality engineer<br /><span>with a builder's itch.</span></h2>
+    </div>
+    <ol>
+      {jobs.map((j) => (
+        <li>
+          <span class="when">{j.when}</span>
+          <div><h3>{j.role} <span>· {j.org}</span></h3><p>{j.line}</p></div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .about { padding: clamp(100px, 14vw, 180px) 0 clamp(60px, 9vw, 120px); overflow: hidden; }
+  .marquee { display: grid; gap: 14px; margin-bottom: clamp(80px, 11vw, 150px); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+  .track { display: flex; gap: 14px; width: max-content; animation: slide 38s linear infinite; }
+  .track.rev { animation-direction: reverse; animation-duration: 44s; }
+  .track span { padding: 16px 28px; border-radius: 999px; border: 1px solid var(--d-line); font: 600 clamp(18px, 2vw, 26px)/1 var(--font-display); color: #e5e5ea; white-space: nowrap; background: rgba(255,255,255,.02); }
+  .marquee:hover .track { animation-play-state: paused; }
+  @keyframes slide { to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .track { animation: none; flex-wrap: wrap; width: auto; justify-content: center; } .track span[aria-hidden] { display: none; } }
+
+  .exp { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(32px, 6vw, 96px); }
+  @media (max-width: 860px) { .exp { grid-template-columns: minmax(0, 1fr); } }
+  .k { font: 600 13px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--d-muted); }
+  h2 { font-size: clamp(36px, 4.6vw, 64px); letter-spacing: -.04em; line-height: 1.02; margin-top: 18px; font-weight: 700; }
+  h2 span { color: var(--d-muted); }
+  ol { list-style: none; padding: 0; margin: 0; }
+  li { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 20px; padding: 24px 0; border-top: 1px solid var(--d-line); }
+  li:last-child { border-bottom: 1px solid var(--d-line); }
+  @media (max-width: 560px) { li { grid-template-columns: minmax(0, 1fr); gap: 6px; } }
+  .when { font: 500 14px/1.6 var(--font-mono); color: var(--d-muted); }
+  h3 { font: 650 20px/1.3 var(--font-display); letter-spacing: -.01em; }
+  h3 span { color: var(--d-muted); font-weight: 500; }
+  li p { margin-top: 6px; color: #a1a1a6; font-size: 16px; }
+</style>
