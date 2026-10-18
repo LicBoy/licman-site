@@ -37,8 +37,10 @@ const lines = [
   .who { display: flex; align-items: center; gap: 10px; font: 500 15px/1.4 var(--font-body); color: var(--d-muted); margin-bottom: 26px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 4px rgba(52,211,153,.18); flex: none; }
   h1 { font-size: clamp(40px, 4.7vw, 80px); font-weight: 700; letter-spacing: -.045em; line-height: .98; }
-  .line { display: block; overflow: hidden; padding-bottom: .06em; }
-  @media (min-width: 901px) { .line { white-space: nowrap; } }
+  /* Clip only vertically (for the rise animation) so a long line is never cut at the column edge. */
+  .line { display: block; overflow: hidden; overflow: visible clip; padding-bottom: .06em; }
+  /* On desktop lines don't wrap, so cap the size by the column width: Safari sets this font ~10% wider than Chrome. */
+  @media (min-width: 901px) { .copy { container-type: inline-size; } h1 { font-size: min(clamp(40px, 4.7vw, 80px), 10cqi); } .line { white-space: nowrap; } }
   .line > span { display: inline-block; transform: translateY(105%); animation: rise .9s cubic-bezier(.2,.7,.1,1) forwards; animation-delay: calc(.15s + var(--i) * .12s); }
   .dim { color: var(--d-muted); }
   .grad > span { background: linear-gradient(90deg, #ffb340, #ff6a5c 50%, #b06cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
