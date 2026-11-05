@@ -1,17 +1,22 @@
 ---
 // The one place that asks: let's work together.
+// Recruiters reach for LinkedIn and email first; Telegram is quickest for freelance clients.
 const links = [
-  { label: "Telegram", sub: "@Licman", href: "https://t.me/Licman", primary: true },
-  { label: "LinkedIn", sub: "in/licman", href: "https://www.linkedin.com/in/licman" },
-  { label: "GitHub", sub: "LicBoy", href: "https://github.com/LicBoy" },
+  { label: "LinkedIn", sub: "in/licman", href: "https://www.linkedin.com/in/licman", primary: true },
   { label: "Email", sub: "ahmetvaleevr@gmail.com", href: "mailto:ahmetvaleevr@gmail.com" },
+  { label: "Telegram", sub: "@Licman", href: "https://t.me/Licman" },
+  { label: "GitHub", sub: "LicBoy", href: "https://github.com/LicBoy" },
 ];
 ---
 <section class="contact" id="contact" aria-label="Contact">
   <div class="wrap">
-    <img class="face" src="/media/ruslan-face.webp" alt="" width="360" height="360" loading="lazy" />
+    <img class="face" src="/media/ruslan-face.webp" alt="Ruslan Akhmetvaleev" width="360" height="360" loading="lazy" />
     <h2>Let's work<br /><span>together.</span></h2>
     <p class="sub">Open to SDET roles in fintech, and to freelance projects: web apps, automation and testing.</p>
+    <div class="cv">
+      <a class="cvbtn" href="/cv/Ruslan-Akhmetvaleev-CV-EN.pdf" download>Download CV <span aria-hidden="true">↓</span></a>
+      <a class="cvalt" href="/cv/Ruslan-Akhmetvaleev-CV-RU.pdf" download lang="ru">Резюме на русском</a>
+    </div>
     <ul>
       {links.map((l) => (
         <li><a class:list={{ primary: l.primary }} href={l.href} target={l.href.startsWith("http") ? "_blank" : undefined} rel="noopener"><b>{l.label}</b><span>{l.sub}</span><i aria-hidden="true">↗</i></a></li>
@@ -29,7 +34,14 @@ const links = [
   h2 { font-size: clamp(56px, 10vw, 150px); letter-spacing: -.055em; line-height: .92; font-weight: 700; }
   h2 span { background: linear-gradient(90deg, #ffb340, #ff6a5c 50%, #b06cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .sub { margin: 30px auto 0; max-width: 34em; font-size: clamp(17px, 1.5vw, 20px); color: #a1a1a6; }
-  ul { list-style: none; padding: 0; margin: 50px auto 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; max-width: 1000px; }
+  .cv { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 14px 24px; margin-top: 36px; }
+  .cv a { position: static; display: inline-flex; flex-direction: row; align-items: center; padding: 0; border: 0; border-radius: 0; background: none; min-width: 0; }
+  .cv a:hover { transform: none; background: none; }
+  .cv .cvbtn { gap: 10px; padding: 15px 26px; border-radius: 999px; background: linear-gradient(90deg, #ffb340, #ff6a5c 50%, #b06cff); color: #0b0b0d; font: 650 16px/1 var(--font-body); transition: transform .2s, box-shadow .2s; }
+  .cv .cvbtn:hover { background: linear-gradient(90deg, #ffb340, #ff6a5c 50%, #b06cff); transform: translateY(-2px); box-shadow: 0 12px 40px -10px rgba(255,106,92,.6); }
+  .cv .cvalt { color: #c7c7cc; font-weight: 550; font-size: 15px; border-bottom: 1.5px solid rgba(255,255,255,.3); padding-bottom: 3px; }
+  .cv .cvalt:hover { color: #fff; border-color: #fff; }
+  ul { list-style: none; padding: 0; margin: 40px auto 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; max-width: 1000px; }
   @media (max-width: 860px) { ul { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 420px) { ul { grid-template-columns: minmax(0, 1fr); } }
   a { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 22px 22px 20px; border-radius: 20px; border: 1px solid var(--d-line); text-decoration: none; text-align: left; background: rgba(255,255,255,.03); transition: background .2s, transform .2s, border-color .2s; min-width: 0; }

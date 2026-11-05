@@ -20,7 +20,7 @@ const lines = [
     </div>
 
     <div class="portrait" data-tilt>
-      <div class="frame"><img src="/media/ruslan.webp" alt="Ruslan Akhmetvaleev at the Golden Bridge in Da Nang" width="820" height="1000" /></div>
+      <div class="frame"><img src="/media/ruslan.webp" alt="Ruslan Akhmetvaleev at the Golden Bridge in Da Nang" width="820" height="1000" fetchpriority="high" decoding="async" /></div>
       <div class="chip c1" aria-hidden="true"><b class="ok">✓</b> 142 tests passed <em>0.9s</em></div>
       <div class="chip c2" aria-hidden="true"><b class="amber">●</b> Order P-0421 placed</div>
       <div class="chip c3" aria-hidden="true"><b class="red">✗</b> Bug caught before release</div>
@@ -41,7 +41,7 @@ const lines = [
   .line { display: block; overflow: hidden; overflow: visible clip; padding-bottom: .06em; }
   /* On desktop lines don't wrap, so cap the size by the column width: Safari sets this font ~10% wider than Chrome. */
   @media (min-width: 901px) { .copy { container-type: inline-size; } h1 { font-size: min(clamp(40px, 4.7vw, 80px), 10cqi); } .line { white-space: nowrap; } }
-  .line > span { display: inline-block; transform: translateY(105%); animation: rise .9s cubic-bezier(.2,.7,.1,1) forwards; animation-delay: calc(.15s + var(--i) * .12s); }
+  .line > span { display: inline-block; transform: translateY(105%); animation: rise .7s cubic-bezier(.2,.7,.1,1) forwards; animation-delay: calc(.05s + var(--i) * .07s); }
   .dim { color: var(--d-muted); }
   .grad > span { background: linear-gradient(90deg, #ffb340, #ff6a5c 50%, #b06cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
   @keyframes rise { to { transform: none; } }
@@ -50,7 +50,7 @@ const lines = [
   .cue i::after { content: ""; position: absolute; left: 50%; top: 6px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 2px; background: currentColor; animation: wheel 1.6s infinite; }
   @keyframes wheel { 0% { opacity: 0; transform: translateY(0); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(12px); } }
 
-  .portrait { position: relative; justify-self: center; width: 100%; max-width: 420px; transform-style: preserve-3d; transition: transform .25s ease-out; opacity: 0; animation: fade 1.2s .4s forwards; }
+  .portrait { position: relative; justify-self: center; width: 100%; max-width: 420px; transform-style: preserve-3d; transition: transform .25s ease-out; opacity: 0; animation: fade .8s .1s forwards; }
   @keyframes fade { from { opacity: 0; transform: translateY(30px) scale(.97); } to { opacity: 1; transform: none; } }
   .frame { border-radius: 32px; overflow: hidden; aspect-ratio: 820 / 1000; box-shadow: 0 40px 100px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.08); }
   .frame img { width: 100%; height: 100%; object-fit: cover; }

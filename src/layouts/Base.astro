@@ -6,6 +6,18 @@ const {
   description = "QA automation engineer in fintech who also builds web apps and automation for businesses. Interactive portfolio with live demos.",
 } = Astro.props;
 const og = new URL("/og.jpg", Astro.site ?? Astro.url).href;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
+const person = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Ruslan Akhmetvaleev",
+  jobTitle: "QA Automation Engineer (SDET)",
+  url: canonical,
+  image: new URL("/media/ruslan-face.webp", Astro.site ?? Astro.url).href,
+  email: "mailto:ahmetvaleevr@gmail.com",
+  address: { "@type": "PostalAddress", addressLocality: "Da Nang", addressCountry: "VN" },
+  sameAs: ["https://www.linkedin.com/in/licman", "https://github.com/LicBoy", "https://t.me/Licman"],
+};
 ---
 <!doctype html>
 <html lang="en">
@@ -16,11 +28,15 @@ const og = new URL("/og.jpg", Astro.site ?? Astro.url).href;
     <meta name="description" content={description} />
     <meta name="theme-color" content="#070709" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonical} />
+    <link rel="preload" as="image" href="/media/ruslan.webp" fetchpriority="high" />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={og} />
     <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json" set:html={JSON.stringify(person)} />
   </head>
   <body>
     <slot />

@@ -6,7 +6,7 @@
     <div class="box" data-reel>
       <video src="/media/reel.mp4" poster="/media/reel-poster.webp" muted loop playsinline preload="metadata" aria-label="60-second showreel: testing payment systems and building apps"></video>
       <button class="play" type="button" data-restart><span class="tri" aria-hidden="true"></span>Watch from the start</button>
-      <span class="tag">Showreel · 60 s</span>
+      <span class="len">Showreel · 60 s</span>
     </div>
   </div>
 </section>
@@ -18,8 +18,9 @@
   video { width: 100%; height: 100%; object-fit: cover; display: block; }
   .play { position: absolute; left: 32px; bottom: 28px; display: inline-flex; align-items: center; gap: 10px; padding: 12px 18px; border-radius: 999px; border: 0; background: rgba(255,255,255,.92); color: #111; font: 600 15px/1 var(--font-body); cursor: pointer; opacity: var(--ui, 0); transition: opacity .3s; }
   .tri { width: 0; height: 0; border-left: 10px solid #111; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
-  .tag { position: absolute; right: 32px; bottom: 34px; font: 600 13px/1 var(--font-mono); letter-spacing: .08em; color: rgba(255,255,255,.75); opacity: var(--ui, 0); transition: opacity .3s; }
-  @media (max-width: 700px) { .reel { height: auto; } .stick { position: static; height: auto; padding: 40px 0; } .box { width: calc(100vw - 32px); transform: none; border-radius: 20px; --ui: 1; } .play { left: 14px; bottom: 12px; padding: 9px 13px; font-size: 13px; } .tag { display: none; } }
+  /* Not ".tag": that name is a global pill style (cream background) and made this label unreadable. */
+  .len { position: absolute; right: 32px; bottom: 34px; padding: 8px 12px; border-radius: 999px; background: rgba(0,0,0,.55); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: 600 13px/1 var(--font-mono); letter-spacing: .08em; color: rgba(255,255,255,.85); opacity: var(--ui, 0); transition: opacity .3s; }
+  @media (max-width: 700px) { .reel { height: auto; } .stick { position: static; height: auto; padding: 40px 0; } .box { width: calc(100vw - 32px); transform: none; border-radius: 20px; --ui: 1; } .play { left: 14px; bottom: 12px; padding: 9px 13px; font-size: 13px; } .len { display: none; } }
   @media (prefers-reduced-motion: reduce) { .box { transform: none; width: min(1200px, calc(100vw - 32px)); --ui: 1; } .reel { height: auto; } .stick { position: static; height: auto; padding: 60px 0; } }
 </style>
 
@@ -38,10 +39,17 @@
       box!.style.setProperty("--s", String(.62 + .38 * e));
       box!.style.setProperty("--r", `${36 * (1 - e)}px`);
       box!.style.setProperty("--ui", e > .9 ? "1" : "0");
+      // Start the film only once it nearly fills the screen; until then the poster shows instead of the black intro.
+      if (e > .85 && !started) { started = true; video.currentTime = 0; video.play().catch(() => {}); }
     }
+    let started = false;
     addEventListener("scroll", () => requestAnimationFrame(update), { passive: true });
     addEventListener("resize", update); update();
-    new IntersectionObserver(([e]) => { e.isIntersecting ? video.play().catch(() => {}) : video.pause(); }, { threshold: .25 }).observe(box);
+    new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) { video.pause(); return; }
+      // Small screens and reduced motion have no grow effect: start when most of the film is visible.
+      if (reduce || small() || started) { started = true; video.play().catch(() => {}); }
+    }, { threshold: .6 }).observe(box);
     box.querySelector("[data-restart]")!.addEventListener("click", () => { video.currentTime = 0; video.play().catch(() => {}); });
   }
 </script>
