@@ -1,0 +1,59 @@
+---
+// Pages for the games: listing, per-game pages, privacy and support.
+// Kept apart from Base.astro (the portfolio) so store links stay simple.
+import "../styles/global.css";
+interface Props { title: string; description?: string; frontmatter?: { title: string; description?: string } }
+const fm = Astro.props.frontmatter;
+const title = fm?.title ?? Astro.props.title;
+const description = fm?.description ?? Astro.props.description ?? "Small mobile games by Licman.";
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#14112b" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonical} />
+  </head>
+  <body class="games">
+    <header class="g-wrap g-top">
+      <a href="/games/" class="g-brand">Licman Games</a>
+      <a href="/" class="g-home">licman.dev</a>
+    </header>
+    <main class="g-wrap">
+      {fm ? <article class="g-doc"><slot /></article> : <slot />}
+    </main>
+    <footer class="g-wrap g-foot">
+      <span>© {new Date().getFullYear()} Ruslan Akhmetvaleev</span>
+      <a href="mailto:support@licman.dev">support@licman.dev</a>
+    </footer>
+  </body>
+</html>
+<style is:global>
+  html:has(body.games) { background: #14112b; }
+  body.games { min-height: 100vh; background: radial-gradient(1200px 600px at 70% -10%, #3b2a7a 0%, transparent 60%) no-repeat, #14112b; color: #ece9ff; }
+  .games img { height: auto; }
+  .g-wrap { max-width: 760px; margin: 0 auto; padding: 0 var(--gutter); }
+  .g-top { display: flex; justify-content: space-between; align-items: center; padding-top: 28px; padding-bottom: 28px; }
+  .g-brand { font: 700 20px/1 var(--font-display); text-decoration: none; }
+  .g-home { color: #b8b2e6; font-size: 15px; }
+  .g-foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 48px; padding-bottom: 40px; color: #9a94c8; font-size: 14px; }
+  .games h1 { font-size: clamp(30px, 6vw, 44px); margin-bottom: 16px; }
+  .games h2 { font-size: 22px; margin: 32px 0 10px; }
+  .games p, .games li { color: #d6d2f5; }
+  .games a { color: #ffd166; }
+  .g-doc p { margin: 0 0 16px; }
+  .g-doc strong { color: #fff; }
+  .g-card { display: flex; gap: 20px; align-items: center; padding: 20px; border-radius: var(--radius); background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); text-decoration: none; }
+  .g-card img { width: 88px; height: 88px; border-radius: 22px; }
+  .g-card h2 { margin: 0 0 6px; color: #fff; }
+  .g-links { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0; }
+  .g-links a { padding: .6em 1.1em; border-radius: 999px; background: rgba(255,255,255,.08); text-decoration: none; }
+  .g-shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 24px 0; }
+  .g-shots img { border-radius: 14px; }
+  .g-badge { display: inline-block; font: 600 12px/1 var(--font-mono); padding: .4em .7em; border-radius: 999px; background: #ffd166; color: #14112b; margin-left: 8px; vertical-align: middle; }
+</style>
